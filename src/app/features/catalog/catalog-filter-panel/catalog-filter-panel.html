@@ -1,0 +1,95 @@
+<div class="catalog-filter-panel">
+  <div class="catalog-filter-panel__field">
+    <label class="catalog-filter-panel__label">
+      <span i18n="@@catalogFilterPanel.searchLabel">Buscar</span>
+      <input
+        type="search"
+        class="catalog-filter-panel__search"
+        [value]="searchDraft()"
+        (input)="onSearchInput($event)"
+        i18n-placeholder="@@catalogFilterPanel.searchPlaceholder"
+        placeholder="Nombre, SKU o descripción"
+      />
+    </label>
+  </div>
+
+  <fieldset class="catalog-filter-panel__field">
+    <legend i18n="@@catalogFilterPanel.categoriesLegend">Categorías</legend>
+    @for (category of categories(); track category.slug) {
+      <label class="catalog-filter-panel__checkbox">
+        <input
+          type="checkbox"
+          [checked]="filters().categories.includes(category.slug ?? '')"
+          (change)="onCategoryToggle(category.slug ?? '', $event)"
+        />
+        <span>{{ category.name }} ({{ category.productCount }})</span>
+      </label>
+    }
+  </fieldset>
+
+  <fieldset class="catalog-filter-panel__field">
+    <legend i18n="@@catalogFilterPanel.priceLegend">Rango de precio</legend>
+    <div class="catalog-filter-panel__price-inputs">
+      <label class="catalog-filter-panel__label">
+        <span i18n="@@catalogFilterPanel.minPriceLabel">Mínimo</span>
+        <input
+          type="number"
+          min="0"
+          [value]="minPriceDraft()"
+          (input)="onMinPriceInput($event)"
+          (change)="onPriceCommit()"
+          [attr.aria-invalid]="priceRangeError() ? 'true' : null"
+          [attr.aria-describedby]="priceRangeError() ? priceErrorId() : null"
+        />
+      </label>
+      <label class="catalog-filter-panel__label">
+        <span i18n="@@catalogFilterPanel.maxPriceLabel">Máximo</span>
+        <input
+          type="number"
+          min="0"
+          [value]="maxPriceDraft()"
+          (input)="onMaxPriceInput($event)"
+          (change)="onPriceCommit()"
+          [attr.aria-invalid]="priceRangeError() ? 'true' : null"
+          [attr.aria-describedby]="priceRangeError() ? priceErrorId() : null"
+        />
+      </label>
+    </div>
+    @if (priceRangeError()) {
+      <p [id]="priceErrorId()" class="catalog-filter-panel__error" role="alert" i18n="@@catalogFilterPanel.priceError">
+        El precio mínimo no puede ser mayor que el máximo.
+      </p>
+    }
+  </fieldset>
+
+  <div class="catalog-filter-panel__field">
+    <label class="catalog-filter-panel__label">
+      <span i18n="@@catalogFilterPanel.sortLabel">Ordenar por</span>
+      <select [value]="filters().sort" (change)="onSortChange($event)">
+        <option value="featured" i18n="@@catalogFilterPanel.sort.featured">Destacados</option>
+        <option value="name,asc" i18n="@@catalogFilterPanel.sort.nameAsc">Nombre A-Z</option>
+        <option value="name,desc" i18n="@@catalogFilterPanel.sort.nameDesc">Nombre Z-A</option>
+        <option value="price,asc" i18n="@@catalogFilterPanel.sort.priceAsc">Precio menor</option>
+        <option value="price,desc" i18n="@@catalogFilterPanel.sort.priceDesc">Precio mayor</option>
+        <option value="newest" i18n="@@catalogFilterPanel.sort.newest">Más recientes</option>
+        @if (showRelevance()) {
+          <option value="relevance" i18n="@@catalogFilterPanel.sort.relevance">Relevancia</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="catalog-filter-panel__field">
+    <label class="catalog-filter-panel__checkbox">
+      <input type="checkbox" [checked]="filters().onSale === true" (change)="onSaleToggle($event)" />
+      <span i18n="@@catalogFilterPanel.onSaleLabel">Solo ofertas</span>
+    </label>
+  </div>
+
+  @if (activeFilterCount() > 0) {
+    <button type="button" class="catalog-filter-panel__clear" (click)="onClear()">
+      <span i18n="@@catalogFilterPanel.clear">Limpiar filtros</span>
+      <span class="catalog-filter-panel__clear-count">({{ activeFilterCount() }})</span>
+    </button>
+  }
+</div>

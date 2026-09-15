@@ -389,7 +389,7 @@ Solo se activa tras la hidratación (no existe en servidor).
 
 ---
 
-### [ ] W5. Filtros, búsqueda y ordenamiento
+### [x] W5. Filtros, búsqueda y ordenamiento
 
 Panel de filtros: categorías con conteos, rango de precio, interruptor de
 ofertas, orden, búsqueda con debounce de 300 ms, "Limpiar filtros" con contador.
@@ -403,6 +403,73 @@ Estado vacío con mensaje y botón de limpiar.
 - El caso 23 valida mínimo ≤ máximo antes de consultar.
 - Cambiar cualquier filtro reinicia la lista y sube el scroll.
 - El panel móvil es operable con teclado y atrapa el foco.
+
+**Desviaciones:**
+- **Casos 19, 20, 21 y 24 no se volvieron a probar a nivel de routing**: ya
+  estaban en verde desde W2 (`catalog-query.service.spec.ts`, contra
+  `CatalogQueryService` real con `RouterTestingHarness`). Aquí solo se
+  añadieron los tests de UI que conectan controles reales (casillas, campo
+  de búsqueda, `<select>`) a ese servicio ya probado — no tenía sentido
+  repetir la mecánica de navegación/historial.
+- **`CatalogFilterPanel` (los controles) es puramente presentacional**,
+  separado de `CatalogFilterMobilePanel` (el envoltorio con disparador,
+  insignia, fondo y `appFocusTrap`) — decisión tomada con el usuario. No
+  inyecta `CatalogQueryService` ni el cliente de API: recibe `filters`/
+  `categories` por `input()`, emite `filtersChange`/`clear`, igual que
+  `ProductGrid`/`CatalogLoadMore`. Se monta dos veces en el DOM (columna
+  fija de escritorio + dentro del panel móvil diferido, una de las dos
+  siempre oculta por CSS, no eliminada), así que sus `id` internos
+  (`aria-describedby` del error de precio) llevan un prefijo de instancia
+  para no chocar.
+- **Primera directiva de foco atrapado del repo**: `appFocusTrap`
+  (`shared/focus-trap/`) no existía ningún patrón previo que reutilizar.
+  Mínima a propósito — solo cicla `Tab`/`Shift+Tab` dentro del host, enfoca
+  el primer elemento al activarse y devuelve el foco a `returnFocusTo` al
+  destruirse. No maneja `Escape` (decisión de cada host) ni pone `inert`
+  en el fondo (ese nivel de aislamiento de modal completo es explícito de
+  W7 para el detalle de producto, no lo pide el criterio de W5). Queda
+  lista para que W7 la reutilice en el modal de detalle.
+- **División responsive en dos, no tres**: `PROJECT_SPEC.md` §11 describe
+  tres tratamientos (hoja inferior en móvil, panel lateral en tableta,
+  columna fija en escritorio), pero el propio `W13` lo simplifica a dos
+  ("panel deslizante en móvil y columna lateral en escritorio"). Se
+  construyó ese binario: panel superpuesto con disparador+insignia por
+  debajo de 1024px, columna lateral fija desde 1024px. La distinción fina
+  "desde abajo" vs. "desde el lateral" entre móvil y tableta es CSS puro y
+  queda para el repaso de `W13`. Decisión tomada con el usuario.
+- **`@defer (on interaction(trigger))` en el panel móvil**: el JS del
+  diálogo (fondo, `appFocusTrap`, `CatalogFilterPanel` anidado) se separa
+  en un chunk aparte que solo se descarga si alguien lo abre — confirmado
+  en `pnpm build`, aparece como chunk perezoso independiente del bundle
+  inicial. El bundle inicial quedó en 104.39 kB transferidos, dentro del
+  presupuesto de 200 KB.
+- **Hallazgo real de pruebas**: simular el disparador `on interaction` con
+  un `fireEvent.click` sintético en jsdom no dispara el `@defer` de forma
+  fiable (el bloque nunca pasa a su estado "Complete"). Se usó la API
+  pública de Angular para tests, `deferBlockStates: DeferBlockState.Complete`
+  al llamar `render()`, que fuerza el contenido diferido a su estado final
+  sin depender del disparador — lo que se prueba en
+  `catalog-filter-mobile-panel.spec.ts` es el diálogo (foco, `Escape`,
+  fondo), no el mecanismo de `@defer` en sí.
+- **"Relevancia" solo aparece en el `<select>` de orden cuando hay una
+  búsqueda activa** (`filters().q` no vacío) — lectura directa de
+  "(solo con búsqueda activa)" en `PROJECT_SPEC.md` §4.
+- **El contador de "Limpiar filtros" no cuenta `sort`**: cuenta categorías,
+  precio mínimo/máximo, búsqueda y ofertas (`countActiveFilters()` en
+  `catalog-query.util.ts`). `sort` es orden, no filtro; al pulsar "Limpiar"
+  igual se resetea todo (ya es lo que hacía `clearFilters()` desde W2).
+- **Rango de precio con dos `<input type="number">`**, no un control
+  deslizante doble — `PROJECT_SPEC.md` §4 permite explícitamente cualquiera
+  de los dos. Se valida en cada tecla (mensaje de error visible +
+  `aria-invalid`/`aria-describedby`), pero solo se emite el cambio en
+  `(change)` (perder el foco o `Enter`), nunca por tecla — evita disparar
+  una consulta por cada dígito sin necesitar debounce.
+- **Verificado sin backend disponible en este entorno**: `pnpm lint && pnpm
+  test && pnpm build` en verde (100 tests), pero la verificación manual
+  completa (URL real sobreviviendo a un recargado, `Tab`/`Escape` en el
+  panel con datos reales, estado vacío con un filtro imposible de verdad)
+  queda pendiente de hacer con el backend de `shop-backend-service`
+  levantado — mismo motivo que en W3.
 
 ---
 

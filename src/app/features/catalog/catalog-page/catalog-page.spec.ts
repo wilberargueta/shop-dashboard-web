@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Location } from '@angular/common';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -39,15 +40,17 @@ function loadMoreButton(harness: RouterTestingHarness): HTMLButtonElement {
 
 describe('CatalogPage', () => {
   let listProducts: ReturnType<typeof vi.fn>;
+  let listCategories: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     listProducts = vi.fn();
+    listCategories = vi.fn().mockReturnValue(of([]));
 
     TestBed.configureTestingModule({
       providers: [
         provideRouter(TEST_ROUTES),
         provideLocationMocks(),
-        { provide: PublicCatalogControllerService, useValue: { listProducts } },
+        { provide: PublicCatalogControllerService, useValue: { listProducts, listCategories } },
       ],
     });
   });
@@ -213,5 +216,38 @@ describe('CatalogPage', () => {
 
     expect(harness.routeNativeElement?.querySelectorAll('app-product-card')).toHaveLength(2);
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 0 });
+  });
+
+  it('case 25: shows the empty state with a clear-filters button when nothing matches', async () => {
+    listProducts.mockReturnValue(of(buildResponse(0, 0, false)));
+
+    const harness = await createHarness('/?category=inexistente');
+    await harness.fixture.whenStable();
+
+    expect(harness.routeNativeElement?.textContent).toContain('No hay productos que coincidan');
+    expect(harness.routeNativeElement?.querySelectorAll('app-product-card')).toHaveLength(0);
+
+    const location = TestBed.inject(Location);
+    const clearButton = harness.routeNativeElement?.querySelector('.catalog-page__empty-clear') as HTMLButtonElement;
+    fireEvent.click(clearButton);
+    await harness.fixture.whenStable();
+
+    expect(location.path()).not.toContain('?');
+  });
+
+  it('feeds the desktop filter panel with the categories and counts from listCategories', async () => {
+    listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+    listCategories.mockReturnValue(
+      of([
+        { slug: 'aceites', name: 'Aceites', productCount: 12 },
+        { slug: 'cremas', name: 'Cremas', productCount: 5 },
+      ]),
+    );
+
+    const harness = await createHarness();
+    await harness.fixture.whenStable();
+
+    expect(harness.routeNativeElement?.textContent).toContain('Aceites (12)');
+    expect(harness.routeNativeElement?.textContent).toContain('Cremas (5)');
   });
 });

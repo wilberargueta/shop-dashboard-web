@@ -1,6 +1,6 @@
 import { convertToParamMap } from '@angular/router';
 import { DEFAULT_CATALOG_FILTERS, DEFAULT_CATALOG_PAGE } from './catalog-query.model';
-import { parseCatalogFilters, parseCatalogPage } from './catalog-query.util';
+import { countActiveFilters, parseCatalogFilters, parseCatalogPage } from './catalog-query.util';
 
 describe('parseCatalogFilters', () => {
   it('returns all defaults when no params are present', () => {
@@ -126,6 +126,32 @@ describe('parseCatalogPage', () => {
     it('clamps a value below the minimum', () => {
       expect(parseCatalogPage(convertToParamMap({ size: '0' })).size).toBe(1);
     });
+  });
+});
+
+describe('countActiveFilters', () => {
+  it('is 0 for the defaults', () => {
+    expect(countActiveFilters(DEFAULT_CATALOG_FILTERS)).toBe(0);
+  });
+
+  it('counts categories, price bounds, search and onSale, but not sort', () => {
+    expect(
+      countActiveFilters({
+        q: 'lavanda',
+        categories: ['aceites', 'cremas'],
+        minPrice: 10,
+        maxPrice: 50,
+        onSale: true,
+        inStock: null,
+        sort: 'price,asc',
+      }),
+    ).toBe(6);
+  });
+
+  it('does not count an explicit onSale: false or inStock as filters here (inStock has no UI control)', () => {
+    expect(
+      countActiveFilters({ ...DEFAULT_CATALOG_FILTERS, onSale: false, inStock: true }),
+    ).toBe(1);
   });
 });
 

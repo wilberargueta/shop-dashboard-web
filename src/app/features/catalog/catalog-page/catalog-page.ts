@@ -6,8 +6,10 @@ import {
   PublicCatalogControllerService,
 } from '../../../api/api/public-catalog-controller.service';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
+import { CatalogFilterMobilePanel } from '../catalog-filter-mobile-panel/catalog-filter-mobile-panel';
+import { CatalogFilterPanel } from '../catalog-filter-panel/catalog-filter-panel';
 import { CatalogLoadMore } from '../catalog-load-more/catalog-load-more';
-import { DEFAULT_CATALOG_SORT } from '../catalog-query.model';
+import { DEFAULT_CATALOG_SORT, CatalogFilters } from '../catalog-query.model';
 import { CatalogQueryService } from '../catalog-query.service';
 import { ProductGrid } from '../product-grid/product-grid';
 
@@ -19,7 +21,7 @@ import { ProductGrid } from '../product-grid/product-grid';
  */
 @Component({
   selector: 'app-catalog-page',
-  imports: [ProductGrid, CatalogLoadMore],
+  imports: [ProductGrid, CatalogLoadMore, CatalogFilterPanel, CatalogFilterMobilePanel],
   templateUrl: './catalog-page.html',
   styleUrl: './catalog-page.css',
 })
@@ -96,7 +98,18 @@ export class CatalogPage {
     stream: ({ params }) => this.publicCatalogController.listProducts(params),
   });
 
+  /** Sin `params`: no depende de nada reactivo, se pide una sola vez (también en SSR, igual que `pageResource`). */
+  private readonly categoriesResource = rxResource({
+    stream: () => this.publicCatalogController.listCategories(),
+  });
+
+  protected readonly categories = computed(() => this.categoriesResource.value() ?? []);
+  protected readonly filters = this.catalogQuery.filters;
   protected readonly products = this.accumulatedProducts.asReadonly();
+  /** Caso 25: solo tras resolver, para no confundir "cargando" con "sin resultados". */
+  protected readonly isEmpty = computed(
+    () => this.pageResource.status() === 'resolved' && this.accumulatedProducts().length === 0,
+  );
   /**
    * `pageResource.value()` lanza si el estado no es 'resolved' (incluido
    * 'error' — así lo implementa `resource()` internamente). Por eso todo
@@ -178,5 +191,13 @@ export class CatalogPage {
     }
     this.nextPageInFlight.set(true);
     this.requestedPage.update((page) => page + 1);
+  }
+
+  protected onFiltersChange(patch: Partial<CatalogFilters>): void {
+    this.catalogQuery.updateFilters(patch);
+  }
+
+  protected onClearFilters(): void {
+    this.catalogQuery.clearFilters();
   }
 }

@@ -1,11 +1,43 @@
 <main class="catalog-page">
-  <h1 class="catalog-page__title" i18n="@@catalogPage.title">Catálogo</h1>
-  <app-product-grid [products]="products()" [loading]="isLoadingFirst()" [loadingMore]="isLoadingMore()" />
-  <app-catalog-load-more
-    [hasNext]="hasNext()"
-    [loading]="isLoadingMore()"
-    [hasError]="hasLoadError()"
-    [count]="products().length"
-    (loadMore)="onLoadMore()"
-  />
+  <div class="catalog-page__header">
+    <h1 class="catalog-page__title" i18n="@@catalogPage.title">Catálogo</h1>
+    <app-catalog-filter-mobile-panel
+      class="catalog-page__filters-mobile"
+      [filters]="filters()"
+      [categories]="categories()"
+      (filtersChange)="onFiltersChange($event)"
+      (clear)="onClearFilters()"
+    />
+  </div>
+
+  <div class="catalog-page__layout">
+    <aside class="catalog-page__filters-desktop">
+      <app-catalog-filter-panel
+        [filters]="filters()"
+        [categories]="categories()"
+        (filtersChange)="onFiltersChange($event)"
+        (clear)="onClearFilters()"
+      />
+    </aside>
+
+    <div class="catalog-page__content">
+      @if (isEmpty()) {
+        <div class="catalog-page__empty">
+          <p i18n="@@catalogPage.emptyMessage">No hay productos que coincidan con estos filtros.</p>
+          <button type="button" class="catalog-page__empty-clear" (click)="onClearFilters()">
+            <span i18n="@@catalogPage.emptyClear">Limpiar filtros</span>
+          </button>
+        </div>
+      } @else {
+        <app-product-grid [products]="products()" [loading]="isLoadingFirst()" [loadingMore]="isLoadingMore()" />
+        <app-catalog-load-more
+          [hasNext]="hasNext()"
+          [loading]="isLoadingMore()"
+          [hasError]="hasLoadError()"
+          [count]="products().length"
+          (loadMore)="onLoadMore()"
+        />
+      }
+    </div>
+  </div>
 </main>
