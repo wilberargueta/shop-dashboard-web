@@ -1,4 +1,4 @@
-# Instrucciones para Claude Code — tienda-web
+# Instrucciones para Claude Code — shop-dashboard-web
 
 Sitio público de la tienda. Angular 22 con SSR.
 
@@ -51,7 +51,7 @@ pnpm lighthouse             # auditoría contra el build de producción
 ```
 
 El backend debe estar corriendo en `http://localhost:8080` para desarrollo.
-Levántalo desde el repo `tienda-backend` con `docker compose up`.
+Levántalo desde el repo `shop-backend-service` con `docker compose up`.
 
 ---
 
@@ -116,13 +116,33 @@ botón atrás y el SSR funcionen sin código extra.
 - Tras un cambio del backend: `pnpm api:generate` y arregla lo que TypeScript
   señale.
 
-### Estilos
+### Estilos y responsive
 
-- CSS con variables para colores, espaciados y tipografía. Nada de valores
-  mágicos repartidos.
-- Diseño para móvil primero.
+**El móvil es el caso principal, no el degradado.** Este sitio se comparte por
+WhatsApp y WhatsApp se usa desde el teléfono.
+
+- CSS con variables para colores, espaciados, tipografía **y puntos de corte**.
+  La escala está en `docs/ARQUITECTURA.md` §8 y se declara una sola vez.
+- **Móvil primero**: los estilos base son los del móvil y los `@media` solo
+  suman con `min-width`. Nada de `max-width` como regla general.
+- Antes de añadir un `@media`, prueba con `clamp()`, `minmax()` y unidades
+  relativas. Si el componente debe adaptarse a su contenedor y no a la ventana,
+  usa `@container`.
+- Áreas táctiles de **44×44 px** como mínimo, con 8 px de separación.
+- Ancho mínimo soportado **320 px**, y a ese ancho no puede haber scroll
+  horizontal en ninguna pantalla.
+- `rem` para el texto de lectura, nunca `px`. Debe aguantar zoom al 200 %.
+- `100dvh`, no `100vh`, donde importe la altura visible.
+- `env(safe-area-inset-*)` en los elementos fijos a los bordes.
+- Todo `srcset` lleva su `sizes`. Sin `sizes` el navegador descarga la imagen
+  del tamaño equivocado y la optimización no sirve de nada.
+- Lo que hoy dependa de `:hover` debe estar visible en táctil. Detéctalo con
+  `@media (hover: hover)`, no por ancho de pantalla.
 - Sin `!important` salvo que sobreescribas estilos de terceros y lo justifiques.
 - `prefers-reduced-motion` respetado en toda animación.
+
+Cuando termines un componente, compruébalo a 320, 375, 768 y 1280 px antes de
+darlo por hecho. Un componente que solo se probó a 1280 px no está terminado.
 
 ### Textos
 
@@ -139,6 +159,9 @@ No es una fase final. En cada componente:
 - Etiquetas y roles ARIA correctos.
 - Contraste suficiente.
 - Los cambios dinámicos anunciados con `aria-live`.
+- Un control no accionable usa `aria-disabled="true"` + `aria-describedby`
+  con el motivo, y el manejador retorna temprano. Nunca el atributo
+  `disabled`: quita el foco y el usuario nunca sabe por qué no puede.
 
 Si un componente no se puede usar con teclado, no está terminado.
 

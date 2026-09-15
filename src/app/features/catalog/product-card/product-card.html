@@ -1,11 +1,13 @@
 <article class="product-card" [class.product-card--out-of-stock]="product().inStock === false">
   @if (cardImage(); as image) {
     <picture class="product-card__picture">
-      @if (image.webp) {
-        <source type="image/webp" [srcset]="image.webp" />
+      @if (cardSrcsetWebp(); as webpSrcset) {
+        <source type="image/webp" [srcset]="webpSrcset" [attr.sizes]="imageSizes" />
       }
       <img
         [src]="image.jpeg ?? image.webp"
+        [srcset]="cardSrcsetFallback()"
+        [attr.sizes]="imageSizes"
         [alt]="product().primaryImage?.altText ?? ''"
         [attr.width]="image.width ?? 600"
         [attr.height]="image.height ?? 600"
@@ -51,5 +53,13 @@
 
   @if (product().inStock === false) {
     <p class="product-card__badge product-card__badge--out-of-stock" i18n="@@productCard.outOfStock">Agotado</p>
+    <button type="button" class="product-card__whatsapp-button" aria-disabled="true"
+      [attr.aria-describedby]="outOfStockReasonId()"
+    >
+      <span i18n="@@productCard.whatsappButton">Consultar por WhatsApp</span>
+    </button>
+    <span [id]="outOfStockReasonId()" class="visually-hidden" i18n="@@productCard.outOfStockReason"
+      >Agotado. No disponible para pedido por ahora.</span
+    >
   }
 </article>

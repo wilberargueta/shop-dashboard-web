@@ -1,9 +1,30 @@
-# ROADMAP — tienda-web
+# ROADMAP — shop-dashboard-web
 
 Tareas en orden. **Este repo depende del backend**: no empieces hasta que las
-tareas B0–B4 de `tienda-backend` estén terminadas y el OpenAPI sea generable.
+tareas B0–B4 de `shop-backend-service` estén terminadas y el OpenAPI sea generable.
 
 Marca `[x]` al completar y anota desviaciones.
+
+---
+
+## Anclas responsive — respétalas desde el principio
+
+El grueso del trabajo responsive es **W13**, y está ahí a propósito: casi todo
+es CSS y se puede ajustar después sin tocar la estructura.
+
+Pero **estas cuatro decisiones no son CSS**, y aplicarlas tarde significa
+reescribir. Respétalas en las tareas donde aparecen, aunque el diseño móvil
+todavía no esté pulido:
+
+| Ancla | Dónde se decide | Qué pasa si se ignora |
+|---|---|---|
+| El contenido del detalle vive en un **componente propio**, y la página, el modal y la hoja móvil solo son contenedores distintos que lo envuelven | W6 y W7 | Si el modal lleva el contenido dentro, la variante móvil obliga a duplicarlo o a reescribirlo |
+| Toda imagen con `srcset` declara `sizes`, y el `srcset` incluye `card` y `card2x` con sus descriptores `w` | W3 | Sin `sizes` el navegador asume ancho completo de ventana y descarga la imagen equivocada en el grid. Es un bug de rendimiento, no un detalle estético |
+| El contenedor del grid reserva espacio inferior cuando la barra de selección está visible | W9 | La barra tapa los últimos productos y no se pueden pulsar |
+| Los puntos de corte se declaran como variables CSS una sola vez, con la escala de `docs/ARQUITECTURA.md` §8 | W0 | Acabas con anchos mágicos repartidos por veinte archivos |
+
+Las dos primeras son las caras. Las otras dos son baratas de arreglar después,
+pero cuestan un minuto ahora.
 
 ---
 
@@ -60,7 +81,7 @@ de la aplicación.
 
 **Desviaciones:**
 - **`PublicSettings` no se generó**: `GET /api/public/v1/settings` todavía no
-  existe en el backend — es la tarea `B11` de `tienda-backend`, que va después
+  existe en el backend — es la tarea `B11` de `shop-backend-service`, que va después
   de identidad/admin/imágenes y no está hecha (verificado contra el backend
   real corriendo en `localhost:8080`, commit `d2ffbcc`, con `B0`-`B4` aplicados).
   Por `CLAUDE.md` ("Falta un campo en la API → dilo; el cambio es en el
@@ -69,7 +90,7 @@ de la aplicación.
 - El `429`/`Retry-After` del interceptor está cubierto con tests unitarios
   (`HttpTestingController`, respuesta simulada) porque el backend tampoco
   tiene límite de peticiones todavía (`B12`, sin hacer) y hoy no puede producir
-  un `429` real. Es justo el nivel "unitarias" que pide `PROJECT_SPEC.md` §14
+  un `429` real. Es justo el nivel "unitarias" que pide `PROJECT_SPEC.md` §15
   para este caso.
 - **Generador elegido**: `openapi-generator-cli` (`typescript-angular`),
   versión del wrapper npm `2.41.0` y del generador Java `7.25.0` (fijada en
@@ -106,7 +127,7 @@ Validación y saneado de los parámetros que llegan de la URL: un `sort`
 inventado o un `minPrice` no numérico se ignoran, no rompen la página.
 
 **Aceptación:**
-- Casos 19, 20, 21 y 24 de `PROJECT_SPEC.md` §14.
+- Casos 19, 20, 21 y 24 de `PROJECT_SPEC.md` §15.
 - Una URL con parámetros basura renderiza el catálogo sin filtros, sin errores.
 - Funciona en servidor: el SSR lee los parámetros y renderiza filtrado.
 
@@ -128,7 +149,7 @@ inventado o un `minPrice` no numérico se ignoran, no rompen la página.
   — no hay ninguna guarda de plataforma que escribir porque no se toca
   ninguna API de navegador. Decisión tomada con el usuario: la prueba real
   con `curl` sobre el HTML ya renderizado (casos 40 y 44 de
-  `PROJECT_SPEC.md` §14) queda para W3/W4, que es cuando existe una página
+  `PROJECT_SPEC.md` §15) queda para W3/W4, que es cuando existe una página
   real. Aquí se prueba con `TestBed` + `RouterTestingHarness` normal.
 - **`RouterTestingHarness` necesita `Router.setUpLocationChangeListener()`
   manual**: `RouterTestingHarness.create()` usa `TestBed.createComponent`,
@@ -157,6 +178,12 @@ el resto.
 
 **Aceptación:**
 - El grid muestra 3 columnas a 1280 px, 2 a 768 px, 1 a 375 px.
+- **Ancla responsive**: el `srcset` incluye `card` (600w) con su descriptor
+  `w`, y hay un `sizes` que describe el ancho real de la tarjeta en cada
+  punto de corte. Sin `sizes`, el navegador asume el ancho completo de la
+  ventana y descarga la imagen equivocada. Ver el ejemplo de `<picture>` en
+  `PROJECT_SPEC.md` §5. El candidato `card2x` (1200w) queda fuera — ver
+  `W3.1`.
 - CLS medido = 0 al cargar las imágenes (verifícalo en Lighthouse).
 - Un producto con descuento muestra precio tachado, precio efectivo e insignia.
 - Un producto agotado se muestra atenuado con el botón deshabilitado y una
@@ -164,18 +191,33 @@ el resto.
 - Un producto sin imagen muestra el respaldo.
 - El grid es una lista semántica, no `div`s sueltos.
 
-**Pendiente — no marcar como hecha hasta resolver esto:**
-- El criterio de "agotado" pide un botón deshabilitado con explicación
-  accesible, pero `ProductCard` todavía no tiene ningún botón (casilla de
-  selección y botón de WhatsApp están explícitamente en W9/W10 según el
-  propio ROADMAP). Hoy solo se cumple la parte de imagen atenuada + etiqueta
-  "Agotado"; falta decidir si este criterio se relaja hasta que el botón
-  exista, o si se adelanta un botón deshabilitado mínimo en W3.
-- CLS = 0 no está medido con Lighthouse — no hay backend disponible en este
-  entorno para servir imágenes reales. Lo verificado es el mecanismo
-  (`width`/`height` + `aspect-ratio` en cada `<img>`), no la métrica.
-
 **Desviaciones:**
+- **Botón deshabilitado mínimo del criterio de "agotado", adelantado en esta
+  tarea** (decisión tomada con el usuario): `ProductCard` todavía no tiene el
+  botón real de WhatsApp — eso sigue siendo W10 — pero un producto agotado
+  ahora renderiza un `<button>` con `aria-disabled="true"` (nunca el atributo
+  `disabled`: lo dejaría fuera del orden de tabulación y algún lector de
+  pantalla no anunciaría la explicación) y `aria-describedby` apuntando a un
+  texto accesible ("Agotado. No disponible para pedido por ahora."). Solo se
+  renderiza para productos agotados; para productos disponibles no hay
+  ningún botón todavía. W10 generalizará esto: el botón se renderizará
+  siempre, con `aria-disabled` condicional a `inStock` y el manejador de
+  clic real con retorno temprano si está agotado. Convención anotada en
+  `CLAUDE.md` §Accesibilidad para que el resto del repo la siga igual.
+- **Corregida una contradicción real en `PROJECT_SPEC.md`** (decisión tomada
+  con el usuario): §3 decía que la tableta pasa a 2 columnas a partir de
+  640 px, pero §5 (el propio ejemplo de `sizes` que este ancla pide seguir)
+  y §11 decían 768 px — y el código ya tenía 640 px, sin corresponder a
+  ninguno de los dos. Se corrigió `PROJECT_SPEC.md` §3 a 768 px (coincide con
+  `md` de la escala de `ARQUITECTURA.md` §8 y con lo que ya dice §11) y se
+  movió `product-grid.css` de 640 px a 768 px para que el `sizes` añadido
+  ahora sea honesto con lo que el grid realmente renderiza. Para mitigar que
+  las tarjetas de una sola columna entre 480–767 px queden demasiado anchas,
+  `.product-grid` lleva un `max-width` centrado en ese rango, que se retira
+  desde 768 px. No se introdujo el sistema de variables CSS de breakpoints
+  de `ARQUITECTURA.md` §8 — ese refactor es un criterio de aceptación propio
+  de `W13`, hacerlo aquí solo para `product-grid.css` habría duplicado
+  trabajo.
 - **Wiring mínimo de `/` incluido en esta tarea**: `ProductCard`/`ProductGrid`
   son puramente de presentación (reciben todo por `input()`), pero sin una
   página real que los consuma no había forma de medir CLS/columnas con
@@ -216,11 +258,42 @@ el resto.
   confirmado con `curl` sobre el HTML real. La verificación completa con
   datos reales (columnas en 375/768/1280 px, CLS con Lighthouse, que el
   primer lote no se pida dos veces) queda pendiente de hacer con el backend
-  de `tienda-backend` levantado, tal como pide el criterio de aceptación.
+  de `shop-backend-service` levantado, tal como pide el criterio de aceptación.
+
+**Pendiente — CLS sigue sin medirse, no marcar `[x]` hasta resolver esto:**
+- Se añadió `pnpm lighthouse` (antes solo documentado en `CLAUDE.md`, nunca
+  implementado) y se confirmó `pnpm lint && pnpm test && pnpm build` en
+  verde (76 tests, sin errores de lint, bundle inicial 94.43 kB transferido —
+  dentro del presupuesto de 200 KB). Pero al intentar medir CLS de verdad,
+  `localhost:8080` no respondió (`Connection refused`, confirmado también
+  sin el aislamiento de red del entorno de ejecución, no es un problema de
+  sandbox): el backend real no estaba arriba en este entorno pese a lo
+  indicado. No se inventó un número de CLS. Falta repetir `pnpm build` →
+  `pnpm serve:ssr:shop-dashboard-web` → `pnpm lighthouse` con el backend de
+  verdad accesible, leer el CLS de `lighthouse-report.html`, y solo entonces
+  marcar esta tarea `[x]` (o documentar la causa si el número no es bueno).
 
 ---
 
-### [ ] W4. Scroll infinito
+### [ ] W3.1. `srcset` con `card2x` (pendiente del backend)
+
+`ImageRef` (`src/app/api/model/image-ref.ts`) solo expone hoy `thumb` y
+`card` — `card2x` no existe en el cliente generado porque el backend
+todavía no lo produce (`B9`/`B10` de `shop-backend-service`). W3 aplicó el
+ancla de `sizes` con el único candidato disponible (`card`, 600w).
+
+**Aceptación:**
+- Tras `B9`/`B10` y `pnpm api:generate`, `ImageRef.card2x` existe con su
+  `RenditionRef`.
+- `ProductCard` añade el candidato `card2x` (1200w) al mismo `srcset` que ya
+  tiene `card` (600w), en `<source>` e `<img>`, sin tocar `sizes` (ya
+  correcto desde W3).
+- Test actualizado en `product-card.spec.ts` verificando ambos candidatos en
+  el `srcset`.
+
+---
+
+### [x] W4. Scroll infinito
 
 `IntersectionObserver` sobre un centinela. Indicador de carga con tarjetas
 esqueleto. Una sola petición en vuelo. Fin de lista explícito. Botón
@@ -229,29 +302,20 @@ esqueleto. Una sola petición en vuelo. Fin de lista explícito. Botón
 Solo se activa tras la hidratación (no existe en servidor).
 
 **Aceptación:**
-- Casos 13 a 18 de `PROJECT_SPEC.md` §14, todos con test.
+- Casos 13 a 18 de `PROJECT_SPEC.md` §15, todos con test.
 - El caso 15 (no duplicar peticiones al bajar rápido) tiene test.
 - Navegando solo con teclado se puede cargar el siguiente lote.
 - Los nuevos lotes se anuncian con `aria-live`.
 - Caso 40: `GET /` devuelve HTML con el primer lote ya renderizado. Compruébalo
   sobre el cuerpo de la respuesta (`curl`), no sobre el DOM ya hidratado.
-- Caso 44: el primer lote **no se pide dos veces** (una en servidor y otra al
-  hidratar). Verifícalo en la pestaña de red; si se duplica, falta la
-  transferencia de estado.
-
-**Pendiente — no marcar como hecha hasta resolver esto:**
-- **Casos 40 y 44 no verificados de verdad**: no hay backend disponible en
-  este entorno (igual que en W3), y además `pnpm build` + servir el bundle
-  SSR (`node dist/shop-dashboard-web/server/server.mjs`) rechaza con `400`
-  cualquier petición cuyo header `Host` no esté en la lista blanca SSRF que
-  trae Angular 22 por defecto — ni `localhost:4000` ni `127.0.0.1:4000`
-  pasan sin configurar `serverRoutes`/el host permitido. No se tocó esa
-  configuración porque es un tema de despliegue ortogonal a esta tarea, no
-  algo que W4 deba decidir por su cuenta. Lo verificado: `pnpm build`
-  produce el bundle de servidor sin errores, y el cliente generado ya manda
-  `transferCache: true` por defecto en `listProducts()` (mecanismo que da la
-  deduplicación de la transferencia de estado). Falta la comprobación real
-  con `curl`/pestaña de red contra un backend y un host permitidos.
+  **Verificado** contra el backend real (`shop-backend-service`,
+  `localhost:8080`): el HTML crudo de `curl http://localhost:4200/` trae el
+  nombre, precio e imagen del producto de prueba, sin tarjetas esqueleto.
+- ~~Caso 44: el primer lote **no se pide dos veces**~~ — **no se cumple, y se
+  traslada a `W13`** (decisión tomada con el usuario: es un problema de
+  infraestructura SSR/caché HTTP, no encaja temáticamente en ninguna tarea
+  de catálogo). Detalle completo, causa raíz y las opciones para resolverlo
+  están en la sección "Pendiente" de `W13`.
 
 **Desviaciones:**
 - **La profundidad de scroll no vive en la URL** (decisión tomada con el
@@ -307,6 +371,21 @@ Solo se activa tras la hidratación (no existe en servidor).
   `/api/public/v1/products` tras pulsar Enter, sin haber hecho clic nunca).
   Script ad-hoc, no incorporado al repo — la cobertura formal de flujos de
   teclado en un navegador real es de Playwright/W14.
+- **Bug real encontrado con el backend real, no en W4 pero en el mismo
+  archivo**: `CatalogPage` mandaba `sort=featured` explícito por defecto
+  (`DEFAULT_CATALOG_SORT` de W2). El backend lo rechaza con `400` ("valor no
+  permitido: featured") — `ARQUITECTURA.md` §5.1 solo documenta `featured`
+  en la columna "Por defecto", nunca como valor aceptado en la lista blanca.
+  Sin esto, **toda carga inicial sin un `sort` explícito en la URL fallaba**
+  contra el backend real (no se detectó antes porque hasta ahora todos los
+  tests mockeaban `listProducts`). Corregido: `requestParams` omite `sort`
+  cuando es el valor por defecto. Cubierto con dos tests nuevos en
+  `catalog-page.spec.ts`.
+- **`proxy.conf.json` añadido** (referenciado desde `angular.json` →
+  `serve.options.proxyConfig`): sin él, `pnpm start` no tiene forma de
+  resolver las peticiones relativas del navegador a `/api/**` y `/media/**`
+  contra el backend — necesario para poder ver la página funcionando de
+  verdad en desarrollo, no específico de W4.
 
 ---
 
@@ -319,7 +398,7 @@ En móvil, panel lateral con insignia de filtros activos (cargado bajo demanda).
 Estado vacío con mensaje y botón de limpiar.
 
 **Aceptación:**
-- Casos 19 a 25 de `PROJECT_SPEC.md` §14, todos con test.
+- Casos 19 a 25 de `PROJECT_SPEC.md` §15, todos con test.
 - El caso 22 comprueba que 5 pulsaciones rápidas producen 1 petición.
 - El caso 23 valida mínimo ≤ máximo antes de consultar.
 - Cambiar cualquier filtro reinicia la lista y sube el scroll.
@@ -339,13 +418,18 @@ condicionales, selector de cantidad.
 Un slug inexistente o de un producto no publicado devuelve **404 real**.
 
 **Aceptación:**
-- Casos 37, 38, 41, 42 y 43 de `PROJECT_SPEC.md` §14.
+- Casos 37, 38, 41, 42 y 43 de `PROJECT_SPEC.md` §15.
 - El caso 42 se comprueba con el código de estado HTTP de la respuesta, no con
   lo que se ve en pantalla.
 - Sin instrucciones de uso, esa sección no se renderiza en absoluto.
 - El carrusel se navega con las flechas del teclado y anuncia "imagen N de M".
 - `DomSanitizer` con lista blanca sobre la descripción; nunca
   `bypassSecurityTrustHtml`.
+- **Ancla responsive**: todo el contenido del detalle vive en un componente
+  propio (`ProductDetailContent`) que no sabe nada del contenedor que lo
+  envuelve. La página lo usa dentro del layout; W7 lo usará dentro de un modal;
+  W13 lo usará dentro de una hoja a pantalla completa. Si el contenido queda
+  acoplado al contenedor, esas dos tareas se vuelven una reescritura.
 
 ---
 
@@ -360,7 +444,7 @@ cierra, foco devuelto a la tarjeta de origen, `role="dialog"`,
 al cerrar.
 
 **Aceptación:**
-- Casos 32 a 36 y 39 de `PROJECT_SPEC.md` §14, todos con test.
+- Casos 32 a 36 y 39 de `PROJECT_SPEC.md` §15, todos con test.
 - El caso 33 (atrás cierra y preserva la posición de scroll) tiene test de
   extremo a extremo.
 - El caso 36 (foco devuelto a la tarjeta exacta) tiene test.
@@ -382,7 +466,7 @@ codificación correcta.
 **Esta es la pieza más importante del repositorio. Cobertura 100 %.**
 
 **Aceptación:**
-- Casos 1 a 12 de `PROJECT_SPEC.md` §14, todos con test.
+- Casos 1 a 12 de `PROJECT_SPEC.md` §15, todos con test.
 - El caso 11 prueba con `&`, `#`, `+`, tildes, emojis y saltos de línea.
 - El caso 12 recorre el archivo `whatsapp-golden.json` que publica el backend y
   comprueba que la salida coincide caso por caso. Si difiere, una de las dos
@@ -403,7 +487,7 @@ Panel de selección para ajustar cantidades y quitar productos.
 Funciona en servidor devolviendo selección vacía.
 
 **Aceptación:**
-- Casos 26 a 31 de `PROJECT_SPEC.md` §14, todos con test.
+- Casos 26 a 31 de `PROJECT_SPEC.md` §15, todos con test.
 - El caso 29 es crítico: los precios se refrescan, no se leen de `sessionStorage`.
 - El caso 30: un producto despublicado desaparece al restaurar.
 - El SSR no revienta al no existir `sessionStorage`.
@@ -439,7 +523,7 @@ absoluta, canonical, Twitter Card). JSON-LD: `Product` + `Offer` en el detalle,
 `/sitemap.xml` generado en servidor y cacheado 1 hora. `/robots.txt`.
 
 **Aceptación:**
-- Caso 45 y 46 de `PROJECT_SPEC.md` §14.
+- Caso 45 y 46 de `PROJECT_SPEC.md` §15.
 - El JSON-LD pasa la herramienta de pruebas de resultados enriquecidos de Google
   **sin errores ni advertencias**. Verifícalo de verdad.
 - `og:image` es una URL absoluta a la versión `detail`.
@@ -461,10 +545,32 @@ para fechas, números y moneda. `<html lang="es">`.
 
 ---
 
-### [ ] W13. Rendimiento y accesibilidad
+### [ ] W13. Diseño responsive
+
+Repaso completo contra `PROJECT_SPEC.md` §11. Puntos de corte declarados una
+sola vez como variables CSS, con la escala de `docs/ARQUITECTURA.md` §8.
+Panel de filtros deslizante en móvil y columna lateral en escritorio. Detalle a
+pantalla completa en móvil y modal en escritorio. Relleno inferior del grid que
+compense la barra de selección. Áreas táctiles de 44 px. `@media (hover: hover)`
+para lo que hoy dependa del ratón. `sizes` en todas las imágenes con `srcset`.
+
+Test de Playwright parametrizado por ancho, para no repetir el mismo test seis
+veces.
+
+**Aceptación:**
+- Casos 51 a 58 de `PROJECT_SPEC.md` §15, todos con test.
+- El caso 51 (sin scroll horizontal) recorre los seis anchos en las tres vistas.
+- El caso 54 es el que más se olvida: la barra de selección no puede tapar el
+  último producto.
+- Ninguna imagen con `srcset` se queda sin `sizes`.
+- Nada de `100vh` en elementos que deban ocupar la altura visible en móvil.
+
+---
+
+### [ ] W14. Rendimiento y accesibilidad
 
 Auditoría y corrección hasta cumplir los objetivos de `PROJECT_SPEC.md` §10 y
-§11. Carga diferida de rutas y componentes pesados. Presupuestos de tamaño
+§12. Carga diferida de rutas y componentes pesados. Presupuestos de tamaño
 configurados en `angular.json` que **rompen el build** al excederse.
 
 **Aceptación:**
@@ -472,13 +578,54 @@ configurados en `angular.json` que **rompen el build** al excederse.
   Accesibilidad ≥ 95, SEO 100, Buenas prácticas ≥ 95.
 - LCP < 2.5 s, CLS < 0.1, INP < 200 ms.
 - JS inicial < 200 KB comprimido, con el presupuesto configurado.
-- Caso 50 de §14: Axe sin infracciones críticas ni serias en las tres vistas.
+- Caso 50 de §15: Axe sin infracciones críticas ni serias en las tres vistas.
 - Caso 48: el flujo completo es operable solo con teclado.
+- Caso 57: usable con el zoom del navegador al 200 %.
 - `prefers-reduced-motion` respetado.
+- **Caso 44 de §15** (trasladado desde `W4`, decisión tomada con el usuario):
+  el primer lote de `/` no se pide dos veces (servidor + hidratación).
+
+**Pendiente — resolver antes de dar la tarea por terminada:**
+- **Caso 44: el primer lote SÍ se pide dos veces hoy.** Verificado con
+  Playwright contra el backend real (`shop-backend-service`,
+  `localhost:8080`): tras `waitUntil: 'networkidle'` en `/`, el navegador
+  dispara una petición extra a `/api/public/v1/products?page=0`, además de
+  la que ya hizo el servidor (confirmada por el bloque de `TransferState`
+  embebido en el HTML crudo, que trae `"u":"http://localhost:8080/api/public/v1/products"`).
+
+  **Causa raíz**: `HttpTransferCache` de Angular calcula la clave de caché a
+  partir del string completo de la URL de la petición. `app.config.server.ts`
+  usa una URL **absoluta** (`http://localhost:8080/...`) y `app.config.ts`
+  usa una **relativa** (`''`) — decisión explícita de `PROJECT_SPEC.md` §8.
+  Server y cliente generan claves distintas, así que nunca hay *match* y el
+  cliente vuelve a pedir.
+
+  Se probó `HTTP_TRANSFER_CACHE_ORIGIN_MAP` (el mecanismo que Angular
+  documenta para "orígenes distintos entre servidor y cliente"), pero **no
+  cubre este caso**: solo reconcilia dos orígenes absolutos distintos. Si el
+  destino del mapeo es `''` (para igualar la URL relativa del cliente), el
+  propio código de `@angular/common/http` lo trata como *falsy* y no aplica
+  ningún mapeo (`if (!mappedOrigin) return url;` en `mapRequestOriginUrl`,
+  verificado leyendo el fuente y ejecutándolo aislado con Node).
+
+  **Opciones reales para resolverlo** (pendiente decidir con el usuario cuál,
+  al llegar a esta tarea):
+  1. Cachear manualmente con `TransferState` en cada página SSR (`CatalogPage`
+     aquí; `/p/:slug` de `W6` tendría el mismo problema): el servidor guarda
+     la respuesta bajo una clave propia que no depende del origen de la URL;
+     el cliente la lee antes de llamar a la API y no pide nada si ya la
+     tiene. Funciona con cualquier combinación de URLs, pero es trabajo real
+     en más de un lugar.
+  2. Cambiar la decisión de `PROJECT_SPEC.md` §8 para que el cliente también
+     use un origen absoluto reconocible (la URL pública del sitio, por
+     ejemplo) — ahí `HTTP_TRANSFER_CACHE_ORIGIN_MAP` sí funcionaría de
+     fábrica. Contradice el texto actual del spec ("en el navegador pueden
+     ser relativas"), así que requiere aprobarlo explícitamente antes de
+     tocar `ARQUITECTURA.md`/`PROJECT_SPEC.md`.
 
 ---
 
-### [ ] W14. Extremo a extremo y despliegue
+### [ ] W15. Extremo a extremo y despliegue
 
 Suite de Playwright con los casos 47 a 50. `Dockerfile` multi-etapa para el
 servidor SSR, usuario no root, `HEALTHCHECK`. README con instrucciones reales.
@@ -495,6 +642,6 @@ servidor SSR, usuario no root, `HEALTHCHECK`. README con instrucciones reales.
 
 ## Cuando todo esté marcado
 
-Repasa `PROJECT_SPEC.md` §15 uno por uno. La prueba final es real: despliega,
+Repasa `PROJECT_SPEC.md` §16 uno por uno. La prueba final es real: despliega,
 pega un enlace `/p/:slug` en una conversación de WhatsApp y comprueba que sale
 la foto y el título del producto.

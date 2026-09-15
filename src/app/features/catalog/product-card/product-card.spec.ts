@@ -52,6 +52,25 @@ describe('ProductCard', () => {
     expect(container.querySelector('.product-card--out-of-stock')).toBeTruthy();
   });
 
+  it('shows a disabled WhatsApp button with an accessible explanation when out of stock', async () => {
+    const { container } = await render(ProductCard, { inputs: { product: buildProduct({ inStock: false }) } });
+
+    const button = screen.getByRole('button', { name: 'Consultar por WhatsApp' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.hasAttribute('disabled')).toBe(false);
+
+    const describedById = button.getAttribute('aria-describedby');
+    expect(describedById).toBeTruthy();
+    const reason = container.querySelector(`#${describedById}`);
+    expect(reason?.textContent).toContain('Agotado');
+  });
+
+  it('does not render a WhatsApp button when the product is in stock', async () => {
+    await render(ProductCard, { inputs: { product: buildProduct() } });
+
+    expect(screen.queryByRole('button', { name: /whatsapp/i })).toBeNull();
+  });
+
   it('falls back to the local placeholder when the product has no image', async () => {
     const { container } = await render(
       ProductCard,
@@ -68,9 +87,13 @@ describe('ProductCard', () => {
 
     const source = container.querySelector('source[type="image/webp"]');
     const img = container.querySelector('img');
+    const expectedSizes = '(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw';
 
-    expect(source?.getAttribute('srcset')).toBe('/media/p1/card.webp');
+    expect(source?.getAttribute('srcset')).toBe('/media/p1/card.webp 600w');
+    expect(source?.getAttribute('sizes')).toBe(expectedSizes);
     expect(img?.getAttribute('src')).toBe('/media/p1/card.jpg');
+    expect(img?.getAttribute('srcset')).toBe('/media/p1/card.jpg 600w');
+    expect(img?.getAttribute('sizes')).toBe(expectedSizes);
     expect(img?.getAttribute('width')).toBe('600');
     expect(img?.getAttribute('height')).toBe('600');
     expect(img?.getAttribute('alt')).toBe('Frasco de aceite de lavanda');

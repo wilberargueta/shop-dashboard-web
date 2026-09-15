@@ -12,7 +12,8 @@
     "e2e": "playwright test",
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
-    "extract-i18n": "ng extract-i18n"
+    "extract-i18n": "ng extract-i18n",
+    "lighthouse": "lighthouse http://localhost:4000 --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate --output=html --output-path=./lighthouse-report.html --chrome-flags=\"--headless\""
   },
   "private": true,
   "packageManager": "pnpm@12.4.1",
@@ -51,6 +52,7 @@
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^28.0.0",
+    "lighthouse": "^13.4.1",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "8.69.0",

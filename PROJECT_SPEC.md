@@ -1,4 +1,4 @@
-# tienda-web — Especificación
+# shop-dashboard-web — Especificación
 
 > Lee primero `docs/ARQUITECTURA.md`. Ahí están el modelo de dominio, el
 > contrato de API completo y las decisiones cerradas. Este documento cubre
@@ -50,8 +50,8 @@ contenido en ambos casos.
 ### Disposición
 
 - Escritorio (≥1024 px): **3 columnas**.
-- Tableta (640–1023 px): 2 columnas.
-- Móvil (<640 px): 1 columna, o 2 si las tarjetas quedan legibles.
+- Tableta (768–1023 px): 2 columnas.
+- Móvil (<768 px): 1 columna.
 
 Las 3 columnas son el requisito; las otras son la adaptación razonable. CSS Grid
 con `repeat(auto-fill, minmax(...))` o breakpoints explícitos.
@@ -136,10 +136,20 @@ Contiene, y nada más:
 
 ```html
 <picture>
-  <source type="image/webp" srcset="...card.webp">
-  <img src="...card.jpg" alt="..." width="600" height="600" loading="lazy" decoding="async">
+  <source type="image/webp"
+          srcset="...card.webp 600w, ...card2x.webp 1200w"
+          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw">
+  <img src="...card.jpg"
+       srcset="...card.jpg 600w, ...card2x.jpg 1200w"
+       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+       alt="..." width="600" height="600" loading="lazy" decoding="async">
 </picture>
 ```
+
+**El `sizes` no es opcional.** Sin él, el navegador asume que la imagen ocupa el
+ancho completo de la ventana y, en un grid de 3 columnas, descarga siempre la
+versión más grande. Los valores de `sizes` deben coincidir con los puntos de
+corte reales del grid: si cambias uno, cambia el otro.
 
 - `loading="lazy"` en todas **menos en las primeras 3–6** (las del primer
   pantallazo), que llevan `loading="eager"` y `fetchpriority="high"`. Poner
@@ -365,7 +375,69 @@ Cómo se consiguen:
 
 ---
 
-## 11. Accesibilidad
+## 11. Diseño responsive
+
+La escala de puntos de corte y las reglas comunes están en
+`docs/ARQUITECTURA.md` §8. Aquí va lo específico de la tienda.
+
+**Este sitio se verá mayoritariamente en móvil.** Los enlaces se comparten por
+WhatsApp, y WhatsApp se usa desde el teléfono. El móvil no es el caso
+degradado: es el caso principal, y el escritorio es la adaptación.
+
+### Qué hace cada pieza en cada tamaño
+
+| Pieza | Móvil (<768) | Tableta (768–1023) | Escritorio (≥1024) |
+|---|---|---|---|
+| Grid de productos | 1 columna (2 si la tarjeta sigue legible) | 2 columnas | **3 columnas** |
+| Filtros | panel deslizante desde abajo, botón con insignia de filtros activos | panel deslizante lateral | columna lateral fija a la izquierda |
+| Búsqueda | siempre visible en la cabecera | en la cabecera | en la cabecera |
+| Detalle | a pantalla completa (el modal deja de ser modal) | modal ancho | modal centrado, grid visible detrás |
+| Carrusel | una imagen, deslizamiento táctil, puntos | imagen + puntos | imagen grande + tira de miniaturas |
+| Barra de selección | fija abajo, ancho completo | fija abajo | fija abajo, centrada con ancho máximo |
+| Cabecera | logo + buscador + icono de filtros | completa | completa |
+
+**El modal en móvil deja de ser un modal.** A 375 px, una ventana flotante sobre
+un fondo difuminado no cabe: se vuelve una hoja a pantalla completa que sube
+desde abajo, con su propio botón de cerrar. El contenido es el mismo componente;
+lo que cambia es el contenedor. Esto no es un detalle estético — un modal
+centrado con márgenes en un móvil deja el contenido en una columna de 300 px
+con scroll interno, y se usa fatal.
+
+### Cosas que rompen y hay que cuidar
+
+1. **La barra de selección tapa el final de la lista.** Es fija abajo y mide unos
+   64 px. Sin un relleno inferior equivalente en el contenedor del grid, los
+   últimos productos quedan debajo y no se pueden pulsar. Se resuelve con un
+   `padding-bottom` que dependa de si la barra está visible, más
+   `env(safe-area-inset-bottom)`.
+2. **Los nombres de producto largos** rompen la tarjeta a 320 px. Dos líneas con
+   elipsis y `overflow-wrap: anywhere` para nombres sin espacios.
+3. **Precio tachado + precio efectivo + insignia** no caben en una línea a
+   320 px. Deben poder envolverse sin descolocar la tarjeta.
+4. **El rango de precio** con dos campos numéricos lado a lado se estrecha
+   demasiado en móvil: apílalos o usa un deslizador doble con áreas táctiles
+   suficientes.
+5. **El carrusel debe usar el gesto nativo**: `scroll-snap` sobre un contenedor
+   con desplazamiento horizontal, no una librería que capture el táctil. Es más
+   ligero, más fluido y funciona con el teclado sin trabajo extra.
+6. **Hover no existe en táctil.** Cualquier cosa que solo aparezca al pasar el
+   ratón (el botón de WhatsApp en la tarjeta, por ejemplo) debe estar siempre
+   visible en pantallas táctiles. Detéctalo con `@media (hover: hover)`, no por
+   ancho de pantalla: hay portátiles con pantalla táctil y tabletas anchas.
+7. **El teclado virtual en iOS** desplaza la vista al enfocar un campo. Si la
+   barra de búsqueda es fija, comprueba que no quede tapada.
+8. **Las imágenes `srcset` deben declarar `sizes`.** Sin `sizes`, el navegador
+   asume el ancho completo de la ventana y en un grid de 3 columnas descarga la
+   imagen del tamaño equivocado, tirando por tierra la optimización.
+
+### Verificación
+
+Los anchos con los que se comprueba: **320, 375, 768, 1024, 1280 y 1920 px**,
+más móvil en horizontal (~740×360). En ninguno puede haber scroll horizontal.
+
+---
+
+## 12. Accesibilidad
 
 Objetivo: **WCAG 2.1 nivel AA**.
 
@@ -383,7 +455,7 @@ Objetivo: **WCAG 2.1 nivel AA**.
 
 ---
 
-## 12. Internacionalización
+## 13. Internacionalización
 
 Español único idioma, pero **preparado**:
 
@@ -401,7 +473,7 @@ Español único idioma, pero **preparado**:
 
 ---
 
-## 13. Cliente de API
+## 14. Cliente de API
 
 Generado desde el OpenAPI del backend. **No escribas los tipos ni los servicios
 HTTP a mano.**
@@ -422,7 +494,7 @@ pnpm run api:generate    # descarga el openapi.json del backend y genera src/app
 
 ---
 
-## 14. Estrategia de pruebas
+## 15. Estrategia de pruebas
 
 | Nivel | Herramienta | Qué cubre |
 |---|---|---|
@@ -524,6 +596,24 @@ pnpm run api:generate    # descarga el openapi.json del backend y genera src/app
 49. El mismo flujo en viewport de móvil (375 px).
 50. Axe sin infracciones críticas en `/`, en `/p/:slug` y con el modal abierto.
 
+**Responsive** (Playwright, recorriendo los anchos de §11)
+
+51. **Sin scroll horizontal** en `/`, `/p/:slug` y con el panel de filtros
+    abierto, a 320, 375, 768, 1024, 1280 y 1920 px. Se comprueba con
+    `document.documentElement.scrollWidth <= clientWidth`.
+52. El grid muestra 1 columna a 375 px, 2 a 768 px y 3 a 1280 px.
+53. A 375 px el detalle se abre a pantalla completa; a 1280 px como modal
+    centrado con el grid visible detrás.
+54. Con la barra de selección visible, el último producto del grid **queda
+    pulsable**: no está tapado por la barra. Se comprueba en 375 y 1280 px.
+55. Todos los controles interactivos miden al menos 44×44 px a 375 px.
+56. Un nombre de producto de 120 caracteres sin espacios no desborda la tarjeta
+    a 320 px.
+57. Con el zoom del navegador al 200 % a 1280 px, el contenido sigue siendo
+    usable y sin scroll horizontal.
+58. En móvil horizontal (740×360) el detalle se puede desplazar hasta el final y
+    el botón de WhatsApp es alcanzable.
+
 ### Cobertura
 
 80 % de líneas global. **100 % en el servicio de renderizado de plantillas de
@@ -532,12 +622,16 @@ líneas. No hay excusa para no cubrirlo entero.
 
 ---
 
-## 15. Criterios de aceptación del repositorio completo
+## 16. Criterios de aceptación del repositorio completo
 
 - [ ] `pnpm build` y `pnpm test` pasan en limpio.
 - [ ] `pnpm e2e` pasa contra un backend levantado con `docker compose`.
-- [ ] Los 50 casos de §14 existen y pasan.
+- [ ] Los 58 casos de §15 existen y pasan.
 - [ ] Lighthouse cumple los objetivos de §10 en `/` y en `/p/:slug`.
+- [ ] Ninguna pantalla tiene scroll horizontal a 320, 375, 768, 1024, 1280 ni
+      1920 px, ni en móvil horizontal.
+- [ ] El flujo completo se puede hacer desde un teléfono de 375 px sin
+      frustración: probado a mano, no solo con tests.
 - [ ] Axe no reporta infracciones críticas ni serias.
 - [ ] Todo el flujo principal es operable solo con teclado.
 - [ ] Pegar un enlace `/p/:slug` en WhatsApp muestra la imagen y el título

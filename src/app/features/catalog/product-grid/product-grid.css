@@ -9,11 +9,15 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  max-width: 34rem;
+  margin-inline: auto;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
+    max-width: none;
+    margin-inline: 0;
   }
 }
 
