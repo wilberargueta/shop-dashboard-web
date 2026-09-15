@@ -9,7 +9,10 @@
     "test": "ng test",
     "serve:ssr:shop-dashboard-web": "node dist/shop-dashboard-web/server/server.mjs",
     "lint": "ng lint",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "api:generate": "node scripts/generate-api.mjs",
+    "api:check": "node scripts/generate-api.mjs --check",
+    "extract-i18n": "ng extract-i18n"
   },
   "private": true,
   "packageManager": "pnpm@12.4.1",
@@ -35,8 +38,10 @@
     "@angular/build": "^22.1.8",
     "@angular/cli": "^22.1.8",
     "@angular/compiler-cli": "^22.1.0",
+    "@angular/localize": "^22.1.6",
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
+    "@openapitools/openapi-generator-cli": "2.41.0",
     "@playwright/test": "^1.63.0",
     "@testing-library/angular": "^19.5.0",
     "@testing-library/dom": "^10.4.1",

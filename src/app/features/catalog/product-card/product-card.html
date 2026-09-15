@@ -1,0 +1,55 @@
+<article class="product-card" [class.product-card--out-of-stock]="product().inStock === false">
+  @if (cardImage(); as image) {
+    <picture class="product-card__picture">
+      @if (image.webp) {
+        <source type="image/webp" [srcset]="image.webp" />
+      }
+      <img
+        [src]="image.jpeg ?? image.webp"
+        [alt]="product().primaryImage?.altText ?? ''"
+        [attr.width]="image.width ?? 600"
+        [attr.height]="image.height ?? 600"
+        [style.aspect-ratio]="image.width && image.height ? image.width + ' / ' + image.height : '1 / 1'"
+        [attr.loading]="priority() ? 'eager' : 'lazy'"
+        [attr.fetchpriority]="priority() ? 'high' : null"
+        decoding="async"
+      />
+    </picture>
+  } @else {
+    <picture class="product-card__picture">
+      <img
+        src="/images/product-placeholder.svg"
+        alt=""
+        width="600"
+        height="600"
+        style="aspect-ratio: 1 / 1"
+        [attr.loading]="priority() ? 'eager' : 'lazy'"
+        [attr.fetchpriority]="priority() ? 'high' : null"
+        decoding="async"
+      />
+    </picture>
+  }
+
+  <h3 class="product-card__name">{{ product().name }}</h3>
+
+  <p class="product-card__price">
+    @if (hasDiscount()) {
+      <span class="visually-hidden" i18n="@@productCard.previousPrice">precio anterior</span>
+      <s class="product-card__price-list">{{ product().price | currency: product().currency }}</s>
+      <span class="product-card__price-effective">{{
+        product().effectivePrice | currency: product().currency
+      }}</span>
+      <span class="product-card__badge product-card__badge--discount" i18n="@@productCard.discountBadge"
+        >-{{ product().discountPercentage }}%</span
+      >
+    } @else {
+      <span class="product-card__price-effective">{{
+        product().effectivePrice | currency: product().currency
+      }}</span>
+    }
+  </p>
+
+  @if (product().inStock === false) {
+    <p class="product-card__badge product-card__badge--out-of-stock" i18n="@@productCard.outOfStock">Agotado</p>
+  }
+</article>

@@ -1,0 +1,32 @@
+<div class="catalog-load-more">
+  @if (!showEnd()) {
+    <div
+      class="catalog-load-more__sentinel"
+      appIntersectOnVisible
+      [disabled]="sentinelDisabled()"
+      (visible)="onTrigger()"
+    ></div>
+
+    <button type="button" class="catalog-load-more__button visually-hidden" (click)="onTrigger()">
+      @if (hasError()) {
+        <ng-container i18n="@@catalogLoadMore.retry">Reintentar</ng-container>
+      } @else {
+        <ng-container i18n="@@catalogLoadMore.loadMore">Cargar más</ng-container>
+      }
+    </button>
+  }
+
+  <p class="catalog-load-more__status" aria-live="polite">
+    @if (loading()) {
+      <ng-container i18n="@@catalogLoadMore.loading">Cargando más productos…</ng-container>
+    } @else if (hasError()) {
+      <ng-container i18n="@@catalogLoadMore.error">No se pudieron cargar más productos.</ng-container>
+    } @else if (showEnd()) {
+      <ng-container i18n="@@catalogLoadMore.end">No hay más productos.</ng-container>
+    } @else {
+      <!-- Estado "listo, hay más": el texto cambia con cada lote que llega
+           (count() crece), y ese cambio es lo que anuncia el lote nuevo. -->
+      <ng-container i18n="@@catalogLoadMore.count">Mostrando {{ count() }} productos.</ng-container>
+    }
+  </p>
+</div>

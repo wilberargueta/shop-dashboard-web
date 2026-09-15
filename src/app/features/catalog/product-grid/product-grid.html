@@ -1,0 +1,16 @@
+<ul class="product-grid" role="list" [attr.aria-busy]="loading() || loadingMore()">
+  @if (showSkeletons()) {
+    @for (index of skeletonIndexes(); track index) {
+      <li><app-skeleton-card /></li>
+    }
+  } @else {
+    @for (product of products(); track product.id; let i = $index) {
+      <li><app-product-card [product]="product" [priority]="i < priorityCount" /></li>
+    }
+    @if (loadingMore()) {
+      @for (index of trailingSkeletonIndexes(); track index) {
+        <li><app-skeleton-card /></li>
+      }
+    }
+  }
+</ul>

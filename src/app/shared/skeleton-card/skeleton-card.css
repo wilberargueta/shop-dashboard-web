@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-card__image {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  background: var(--color-border);
+}
+
+.skeleton-card__line {
+  height: 0.875rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-border);
+}
+
+.skeleton-card__line--name {
+  width: 80%;
+}
+
+.skeleton-card__line--price {
+  width: 40%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-card__image,
+  .skeleton-card__line {
+    background: linear-gradient(90deg, var(--color-border) 25%, #eeeeec 50%, var(--color-border) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

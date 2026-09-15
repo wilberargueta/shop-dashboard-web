@@ -6,6 +6,11 @@
 /out-tsc
 /bazel-out
 
+# i18n: regenerado con `pnpm extract-i18n` (ng extract-i18n); solo hay
+# locale fuente por ahora, sin traducciones. Se decide cómo versionarlo
+# cuando W12 introduzca un segundo idioma real.
+/messages.xlf
+
 # Node
 /node_modules
 npm-debug.log

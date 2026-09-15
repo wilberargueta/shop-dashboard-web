@@ -7,6 +7,10 @@ const prettier = require('eslint-config-prettier');
 
 module.exports = defineConfig([
   {
+    // Generado por `pnpm api:generate` (ROADMAP.md W1). No es código nuestro.
+    ignores: ['src/app/api/**'],
+  },
+  {
     files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,

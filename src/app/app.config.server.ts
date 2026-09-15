@@ -3,11 +3,17 @@ import { provideServerRendering, withRoutes } from '@angular/ssr';
 import { appConfig } from './app.config';
 import { serverRoutes } from './app.routes.server';
 import { API_BASE_URL } from './core/config/api-base-url.token';
+import { Configuration } from './api/configuration';
+import { ApiConfiguration } from './core/http/api-configuration';
+
+// Absoluta en el servidor: PROJECT_SPEC.md §8, no hay origen implícito en SSR.
+const apiBaseUrl = process.env['API_BASE_URL'] ?? 'http://localhost:8080';
 
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(withRoutes(serverRoutes)),
-    { provide: API_BASE_URL, useValue: process.env['API_BASE_URL'] ?? 'http://localhost:8080' },
+    { provide: API_BASE_URL, useValue: apiBaseUrl },
+    { provide: Configuration, useValue: new ApiConfiguration({ basePath: apiBaseUrl }) },
   ],
 };
 

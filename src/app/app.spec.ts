@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/angular';
+import { provideRouter } from '@angular/router';
+import { render } from '@testing-library/angular';
 import { App } from './app';
 
 describe('App', () => {
-  it('renders the app root', async () => {
-    await render(App);
+  it('renders the router outlet without throwing', async () => {
+    const { container } = await render(App, { providers: [provideRouter([])] });
 
-    expect(screen.getByText(/shop-dashboard-web/i)).toBeTruthy();
+    expect(container.hasAttribute('ng-version')).toBe(true);
   });
 });
