@@ -1,10 +1,10 @@
-import { CurrencyPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
+import { ProductPrice } from '../../../shared/product-price/product-price';
 
 @Component({
   selector: 'app-product-card',
-  imports: [CurrencyPipe],
+  imports: [ProductPrice],
   templateUrl: './product-card.html',
   styleUrl: './product-card.css',
 })
@@ -26,11 +26,6 @@ export class ProductCard {
     const image = this.cardImage();
     const url = image?.jpeg ?? image?.webp;
     return url ? `${url} ${image?.width ?? 600}w` : null;
-  });
-
-  protected readonly hasDiscount = computed(() => {
-    const product = this.product();
-    return !!product.onSale && product.discountPercentage != null;
   });
 
   protected readonly outOfStockReasonId = computed(() => `product-card-oos-${this.product().id}`);

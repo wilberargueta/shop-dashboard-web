@@ -1,0 +1,46 @@
+<div class="quantity-stepper">
+  <span [id]="instanceId + '-label'" class="visually-hidden" i18n="@@quantityStepper.label">Cantidad</span>
+
+  <button
+    type="button"
+    class="quantity-stepper__button"
+    [attr.aria-disabled]="decrementDisabled() ? 'true' : null"
+    [attr.aria-describedby]="decrementDisabled() ? instanceId + '-reason' : null"
+    (click)="decrement()"
+  >
+    <span class="visually-hidden" i18n="@@quantityStepper.decrement">Disminuir cantidad</span>
+    <span aria-hidden="true">&minus;</span>
+  </button>
+
+  <input
+    type="number"
+    class="quantity-stepper__input"
+    [attr.aria-labelledby]="instanceId + '-label'"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.aria-describedby]="disabled() ? instanceId + '-reason' : null"
+    [attr.min]="min()"
+    [value]="quantity()"
+    (change)="onInputChange($event)"
+  />
+
+  <button
+    type="button"
+    class="quantity-stepper__button"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.aria-describedby]="disabled() ? instanceId + '-reason' : null"
+    (click)="increment()"
+  >
+    <span class="visually-hidden" i18n="@@quantityStepper.increment">Aumentar cantidad</span>
+    <span aria-hidden="true">+</span>
+  </button>
+
+  @if (disabled()) {
+    <span [id]="instanceId + '-reason'" class="visually-hidden" i18n="@@quantityStepper.disabledReason"
+      >Agotado. No disponible para pedido por ahora.</span
+    >
+  } @else if (decrementDisabled()) {
+    <span [id]="instanceId + '-reason'" class="visually-hidden" i18n="@@quantityStepper.minReason"
+      >Cantidad mínima alcanzada.</span
+    >
+  }
+</div>

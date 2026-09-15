@@ -1,0 +1,18 @@
+:host {
+  display: block;
+}
+
+.product-detail-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+}
+
+.product-detail-page__not-found,
+.product-detail-page__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+}

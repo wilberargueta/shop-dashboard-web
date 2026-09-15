@@ -1,0 +1,17 @@
+<main class="product-detail-page">
+  @if (product(); as product) {
+    <app-product-detail-content [product]="product" />
+  } @else if (notFound()) {
+    <div class="product-detail-page__not-found">
+      <h1 i18n="@@productDetailPage.notFoundTitle">Producto no encontrado</h1>
+      <p i18n="@@productDetailPage.notFoundMessage">Este producto ya no está disponible.</p>
+      <a routerLink="/" i18n="@@productDetailPage.notFoundLink">Volver al catálogo</a>
+    </div>
+  } @else if (hasError()) {
+    <div class="product-detail-page__error">
+      <p i18n="@@productDetailPage.loadError">No se pudo cargar el producto. Inténtalo de nuevo más tarde.</p>
+    </div>
+  } @else {
+    <app-product-detail-skeleton />
+  }
+</main>

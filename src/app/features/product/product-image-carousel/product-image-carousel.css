@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.product-image-carousel__viewport {
+  position: relative;
+  overflow-x: hidden;
+}
+
+.product-image-carousel__track {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .product-image-carousel__track {
+    scroll-behavior: smooth;
+  }
+}
+
+.product-image-carousel__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+}
+
+.product-image-carousel__slide picture {
+  display: block;
+}
+
+.product-image-carousel__slide img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.product-image-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.product-image-carousel__arrow--prev {
+  left: var(--space-2);
+}
+
+.product-image-carousel__arrow--next {
+  right: var(--space-2);
+}
+
+.product-image-carousel__arrow[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-image-carousel__dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.product-image-carousel__dot {
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-3);
+  border: none;
+  background: transparent;
+  position: relative;
+}
+
+.product-image-carousel__dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-border);
+  transform: translate(-50%, -50%);
+}
+
+.product-image-carousel__dot[aria-current='true']::after {
+  background: var(--color-primary);
+}
+
+.product-image-carousel__thumbnails {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .product-image-carousel__dots {
+    display: none;
+  }
+
+  .product-image-carousel__thumbnails {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .product-image-carousel__thumbnail {
+    flex: 0 0 4.5rem;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: none;
+  }
+
+  .product-image-carousel__thumbnail--active {
+    border-color: var(--color-primary);
+  }
+
+  .product-image-carousel__thumbnail img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+}

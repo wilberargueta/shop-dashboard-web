@@ -1,0 +1,12 @@
+<p class="product-price">
+  @if (hasDiscount()) {
+    <span class="visually-hidden" i18n="@@productPrice.previousPrice">precio anterior</span>
+    <s class="product-price__list">{{ price() | currency: currency() }}</s>
+    <span class="product-price__effective">{{ effectivePrice() | currency: currency() }}</span>
+    <span class="product-price__badge product-price__badge--discount" i18n="@@productPrice.discountBadge"
+      >-{{ discountPercentage() }}%</span
+    >
+  } @else {
+    <span class="product-price__effective">{{ effectivePrice() | currency: currency() }}</span>
+  }
+</p>

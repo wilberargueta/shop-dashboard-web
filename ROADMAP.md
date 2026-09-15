@@ -475,7 +475,7 @@ Estado vacío con mensaje y botón de limpiar.
 
 ## Fase 2 — Detalle
 
-### [ ] W6. Página de detalle con SSR
+### [x] W6. Página de detalle con SSR
 
 Ruta `/p/:slug` renderizada en servidor. Carrusel de imágenes `detail` con
 flechas, puntos, miniaturas en escritorio y deslizamiento táctil en móvil.
@@ -497,6 +497,155 @@ Un slug inexistente o de un producto no publicado devuelve **404 real**.
   envuelve. La página lo usa dentro del layout; W7 lo usará dentro de un modal;
   W13 lo usará dentro de una hoja a pantalla completa. Si el contenido queda
   acoplado al contenedor, esas dos tareas se vuelven una reescritura.
+
+**Desviaciones:**
+- **404 real vía `RESPONSE_INIT`, no vía `DomSanitizer` explícito para la
+  descripción**: `RESPONSE_INIT` (`InjectionToken<ResponseInit | null>`) vive
+  en `@angular/core`, no en `@angular/ssr` como en versiones anteriores de
+  Angular — verificado leyendo `node_modules/@angular/core/types/core.d.ts`
+  antes de usarlo. Es un objeto mutable, presente solo en servidor; mutar
+  `.status = 404` en un `effect()` cuando `getProduct()` falla con
+  `ApiError.status === 404` hace que el servidor real devuelva 404 (casos 42
+  y 43 — el backend no distingue slug inexistente de producto en borrador,
+  así que tampoco lo intenta el frontend). Sobre la descripción: no se
+  inyectó `DomSanitizer` a mano — un binding a `[innerHTML]` ya pasa por el
+  saneador interno de Angular (lista blanca de etiquetas/atributos) salvo que
+  se llame `bypassSecurityTrustHtml`, que es justo lo que prohíben
+  `PROJECT_SPEC.md` §6 y `CLAUDE.md`. Escribir un saneador propio habría sido
+  código nuevo que mantener sin necesidad. Cubierto con un test que inyecta
+  un `<script>` en la descripción y confirma que no aparece en el DOM ni se
+  ejecuta.
+- **Hallazgo real de `resource()`/`rxResource()`**: cualquier error que no
+  "parezca" un `Error` (sin `.name`/`.message` string, que es justo la forma
+  de `ApiError`) se envuelve en un `ResourceWrappedError`, guardando el valor
+  original en `.cause` (`encapsulateResourceError`, interno de
+  `@angular/core`). Leer `productResource.error()` directamente y comparar
+  `.status` fallaba en silencio (los casos 42/43 caían siempre en el mensaje
+  de error genérico) hasta desenvolver `.cause`. Cubierto por los tests de
+  `product-detail-page.spec.ts` que sí distinguen 404 de un 500 genérico.
+- **`i18n-aria-label`/`i18n-aria-roledescription` con interpolación no
+  renderiza el atributo**: en `aria-label="Ir a la imagen {{ i + 1 }}"`
+  combinado con `i18n-aria-label`, el atributo desaparecía por completo del
+  DOM (confirmado con la salida de `@testing-library/angular` en rojo, sin
+  ningún `aria-label` en el HTML compilado) — la misma combinación con texto
+  **estático** (sin interpolar) sí funciona. Se cambió al patrón ya
+  establecido en el repo (`ProductCard`, `CatalogLoadMore`): un
+  `<span class="visually-hidden" i18n="@@clave">` con interpolación dentro
+  del botón/elemento, referenciado con `aria-labelledby` cuando hace falta,
+  en vez de un `aria-label` dinámico. Ese patrón sí está probado y en uso.
+- **`SITE_URL` (`core/config/site-url.token.ts`), infraestructura nueva
+  reutilizable**: los `renditions` de imagen que devuelve la API son rutas
+  relativas (`/media/...`, `ARQUITECTURA.md` §5.1), pero `og:image`/`og:url`
+  necesitan ser absolutas. A diferencia de `API_BASE_URL` (relativa en
+  navegador, absoluta en servidor — `PROJECT_SPEC.md` §8), `SITE_URL` es el
+  mismo valor absoluto en los dos lados, porque alimenta una metaetiqueta que
+  viaja tal cual en el HTML servido al navegador. W8 (`{{url}}` de WhatsApp)
+  y W11 (canonical) reutilizarán este mismo token.
+- **`withComponentInputBinding()` activado en `provideRouter`**
+  (`app.config.ts`): primer parámetro de *ruta* del repo (`CatalogQueryService`
+  solo leía parámetros de *query*). `ProductDetailPage.slug` se rellena solo
+  desde `:slug`, sin inyectar `ActivatedRoute` a mano. No afecta a
+  `CatalogPage`, que no declara `input()`.
+- **Meta tags mínimos adelantados de W11, solo lo que pide el caso 41**:
+  título, descripción y Open Graph (`og:title`, `og:description`, `og:image`
+  absoluta, `og:url`, `og:type`). W11 sigue siendo dueño de JSON-LD,
+  canonical con la lógica de filtros, Twitter Card y sitemap/robots. Sin
+  `settings.seo.default_og_image_id` disponible todavía (bloqueado por `B11`
+  del backend, misma desviación documentada en W1), un producto sin imágenes
+  simplemente no publica `og:image` en vez de inventar un respaldo; `store.name`
+  tampoco está disponible por el mismo bloqueo, así que `og:site_name` no se
+  rellena con un valor real.
+- **`ProductPrice` extraído de `ProductCard` a `shared/product-price/`**: el
+  bloque de precio con descuento (`<s>` + "precio anterior" oculto + insignia
+  "-N%") era idéntico en los dos sitios que ahora lo necesitan. Se extrajo a
+  un componente compartido en vez de duplicar marcado sensible a
+  accesibilidad que podría divergir con el tiempo; `ProductCard` pasa a
+  usarlo. Las claves i18n se renombraron de `productCard.*` a
+  `productPrice.*` — no hay traducciones reales todavía, así que no rompe
+  nada, y los tests de `ProductCard` siguen en verde porque comprueban
+  texto/rol visible, no el id de i18n.
+- **`QuantityStepper` (`shared/quantity-stepper/`) y
+  `ProductDetailSkeleton` (`shared/product-detail-skeleton/`) nuevos,
+  pensados para reutilizarse**: el selector de cantidad no tiene tope real de
+  stock que aplicar — la API pública solo expone `inStock: boolean`, nunca un
+  conteo (`ARQUITECTURA.md` §4.6, el stock exacto es solo de backoffice), así
+  que min=1 sin máximo es la decisión correcta, no un hueco. W9 reutilizará
+  `QuantityStepper` en el panel de selección.
+- **Ruta comodín `**` → 404 genérico, fuera de alcance** (decisión tomada con
+  el usuario): `PROJECT_SPEC.md` §2 menciona `/404` como pantalla, pero
+  ningún ítem del ROADMAP la asigna explícitamente. W6 resuelve solo el 404
+  de producto (misma ruta `/p/:slug`, sin cambiar de URL). Queda como hueco
+  documentado, no como parte de esta tarea.
+- **Verificado con `shop-backend-service` real levantado** (sesión posterior a
+  la primera implementación): con el único producto publicado de los datos
+  semilla (`aceite-esencial-de-lavanda-30ml`), `curl -i` sobre
+  `http://localhost:4200/p/aceite-esencial-de-lavanda-30ml` (con `pnpm start`
+  apuntando al backend real) trae en el HTML crudo
+  `<title>Aceite esencial de lavanda 30ml</title>`,
+  `<meta property="og:image" content="http://localhost:4200/media/products/.../detail.webp">`
+  (absoluta) y `<meta property="og:url" content="http://localhost:4200/p/aceite-esencial-de-lavanda-30ml">`
+  — **caso 41 verificado de verdad, no solo con datos simulados**.
+  `curl -i http://localhost:4200/p/slug-que-no-existe-jamas` devuelve
+  `HTTP/1.1 404 Not Found` como primera línea de la respuesta real (confirmado
+  también directo contra el backend: `GET /api/public/v1/products/slug-que-no-existe-jamas`
+  → `404` con `ProblemDetail`) — **caso 42 verificado de extremo a extremo, con
+  el código de estado HTTP real, tal como pide el criterio de aceptación**.
+- **Bug real encontrado y corregido con esta verificación**: los datos
+  semilla solo tienen un producto con una sola imagen, así que el problema
+  quedaba invisible hasta probarlo con más de una. Se montó temporalmente un
+  componente con 3 imágenes de prueba (no comiteado) y se probó con Playwright
+  a 375×667: `document.documentElement.scrollWidth` daba `750` con
+  `clientWidth: 375` — **scroll horizontal de página real**, violando
+  `ARQUITECTURA.md` §8.4 ("a 320 px no puede haber scroll horizontal en
+  ninguna pantalla"). La causa: aunque `.product-image-carousel__track` sí
+  actúa como su propio contenedor de scroll (`overflow-x: auto`,
+  `clientWidth: 375`, `scrollWidth: 1125` — correcto), su desbordamiento
+  interno igual se filtraba hacia `document.documentElement`/`body`. Se
+  corrigió añadiendo `overflow-x: hidden` a `.product-image-carousel__viewport`
+  (el contenedor inmediato), que contiene el desborde sin tocar el scroll
+  interno del track — reverificado con el mismo script: `scrollWidth` vuelve
+  a `375`, igual a `clientWidth`. De paso se añadió `min-width: 0` al track
+  (no resolvía esto por sí solo, pero es la guarda estándar contra este tipo
+  de fuga en contenedores flex con overflow).
+- **Sincronización scroll→índice verificada en un navegador real, no solo en
+  `jsdom`**: forzar `track.scrollLeft` a la tercera imagen y disparar
+  `scroll` en un Chromium real (con `clientWidth`/`scrollLeft` de layout
+  real, que `jsdom` no calcula) actualiza correctamente el `aria-live` a
+  "Imagen 3 de 3" y el punto activo. El gesto táctil sintético vía CDP
+  (`Input.dispatchTouchEvent`) no llegó a mover `scrollLeft` — Chromium
+  headless no siempre traduce eventos táctiles sintéticos en scroll real del
+  compositor; es una limitación conocida de la herramienta, no evidencia de
+  que el gesto nativo falle. El propio `scroll-snap-type: x mandatory` sobre
+  `overflow-x: auto` es comportamiento estándar de la plataforma (no código
+  de este repo), y su CSS computado se confirmó aplicado correctamente.
+
+- **Caso 43 (404 real para un producto en borrador), aceptado por el mismo
+  mecanismo del caso 42, sin un borrador real contra el que probarlo**
+  (decisión tomada con el usuario): los datos semilla de este entorno solo
+  tienen un producto publicado — no hay ningún `DRAFT` accesible por slug, y
+  crear uno habría requerido credenciales de administrador y escribir en la
+  base de datos real del backend, algo que no es de este repo y que no se
+  hizo sin permiso explícito. El backend no distingue slug inexistente de
+  producto en borrador — ambos devuelven el mismo `ApiError{status: 404}`
+  (`ARQUITECTURA.md` §4.2: "un producto en `DRAFT` es invisible... la API
+  pública debe devolver 404, no 403"), y el frontend tampoco lo intenta
+  distinguir (mismo código en `isNotFoundError`/`RESPONSE_INIT.status = 404`).
+  El caso 42 ya se verificó de extremo a extremo contra el backend real
+  (`curl` con código `404` real), así que el único camino que el frontend
+  podría romper de forma distinta para un borrador —y no rompe, porque es
+  literalmente el mismo código— ya está probado.
+- **Caso 38, deslizamiento táctil con el dedo en un dispositivo real, no
+  verificado** (decisión tomada con el usuario, misma lógica que el caso 43):
+  la navegación por teclado está probada
+  (`product-image-carousel.spec.ts`) y la sincronización scroll→índice
+  (el único código propio de este repo en el gesto) se verificó en un
+  Chromium real con layout real, no en `jsdom`. Que un dedo real sobre
+  `overflow-x: auto` + `scroll-snap-type: x mandatory` dispare un evento de
+  scroll es comportamiento nativo de la plataforma, no código de este
+  repositorio — ya confirmado que ese CSS está aplicado correctamente. Falta
+  solo la confirmación visual en un teléfono real o con emulación táctil
+  manual de un navegador de escritorio, fuera del alcance de lo automatizable
+  en este entorno.
 
 ---
 

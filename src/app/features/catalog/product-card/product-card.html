@@ -34,22 +34,13 @@
 
   <h3 class="product-card__name">{{ product().name }}</h3>
 
-  <p class="product-card__price">
-    @if (hasDiscount()) {
-      <span class="visually-hidden" i18n="@@productCard.previousPrice">precio anterior</span>
-      <s class="product-card__price-list">{{ product().price | currency: product().currency }}</s>
-      <span class="product-card__price-effective">{{
-        product().effectivePrice | currency: product().currency
-      }}</span>
-      <span class="product-card__badge product-card__badge--discount" i18n="@@productCard.discountBadge"
-        >-{{ product().discountPercentage }}%</span
-      >
-    } @else {
-      <span class="product-card__price-effective">{{
-        product().effectivePrice | currency: product().currency
-      }}</span>
-    }
-  </p>
+  <app-product-price
+    [price]="product().price"
+    [effectivePrice]="product().effectivePrice"
+    [currency]="product().currency"
+    [onSale]="product().onSale ?? false"
+    [discountPercentage]="product().discountPercentage"
+  />
 
   @if (product().inStock === false) {
     <p class="product-card__badge product-card__badge--out-of-stock" i18n="@@productCard.outOfStock">Agotado</p>

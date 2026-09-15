@@ -40,24 +40,6 @@
   overflow: hidden;
 }
 
-.product-card__price {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.product-card__price-list {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.product-card__price-effective {
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-}
-
 .product-card__badge {
   display: inline-block;
   align-self: flex-start;
@@ -67,11 +49,6 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: 1;
-}
-
-.product-card__badge--discount {
-  background: var(--color-discount);
-  color: var(--color-primary-contrast);
 }
 
 .product-card__badge--out-of-stock {
