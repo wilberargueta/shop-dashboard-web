@@ -762,6 +762,54 @@ codificación correcta.
   implementaciones está mal. Este repo **no** llama a `/api/admin/**`.
 - Cobertura del servicio: 100 % de líneas y ramas.
 
+**Desviaciones:**
+- **`WhatsAppTemplateService` no depende de `PublicSettings`**: ese tipo
+  todavía no existe en `src/app/api/model/` (bloqueado por `B11` del backend,
+  misma desviación documentada en W1). El servicio recibe las plantillas
+  (`WhatsAppTemplateSet`), los datos de cada línea seleccionada
+  (`WhatsAppSelectionLine`) y el nombre de la tienda como parámetros propios
+  (`features/selection/whatsapp-template/whatsapp-template.model.ts`), sin
+  acoplarse al cliente generado. Quien lo invoque más adelante (W9/W10) le
+  pasa esos valores ya resueltos — el servicio no necesita esperar a `B11`.
+- **`{{descuento}}` renderiza `"0%"` sin descuento activo** (decisión tomada
+  con el usuario): `ARQUITECTURA.md` §6 no define qué hacer cuando
+  `discountPercentage` es `undefined`. `{{precio_lista}}` no era ambiguo (es
+  siempre `price`), pero `{{descuento}}` sí — se trata como 0.
+- **`buildWhatsAppUrl` (regla 3 y caso 11) se implementó aquí, no en W10**:
+  aplica `encodeURIComponent` y arma `https://wa.me/{numero}?text=...`. Es
+  literalmente una regla de `ARQUITECTURA.md` §6, y el caso 11 de codificación
+  está asignado a W8 en `PROJECT_SPEC.md` §15. W10 la reutiliza para el
+  `window.open` real; no la reimplementa.
+- **Locale `es-SV` para `Intl.NumberFormat`/`Intl.DateTimeFormat`**, fijado
+  dentro del servicio (no viene de `LOCALE_ID` de Angular, que W12 todavía no
+  configura): verificado en Node que produce exactamente los mismos formatos
+  que los ejemplos de `ARQUITECTURA.md` §6 (`$20.00`, `12/09/2026`).
+- **`@vitest/coverage-v8` añadido como dependencia de desarrollo**: no existía
+  ninguna forma de verificar el requisito de "cobertura 100 %" de esta tarea
+  sin él. Usado ad-hoc
+  (`pnpm test -- --coverage --coverage-include='src/app/features/selection/whatsapp-template/**'`)
+  para confirmar 100 % líneas/ramas/funciones en este servicio. No se tocó
+  `angular.json` para exigir cobertura global — eso es alcance de W14.
+
+**Pendiente — el caso 12 no tiene test, no marcar `[x]` hasta resolver esto:**
+- **`whatsapp-golden.json` no existe todavía**: verificado contra
+  `shop-backend-service` — la tarea `B11` de su propio `ROADMAP.md`
+  ("Settings y plantillas de WhatsApp", que incluye la tarea de Gradle que
+  genera y publica el archivo) sigue sin implementar, y no hay ningún archivo
+  de ese nombre en ningún repo local. Es el mismo bloqueo que impidió generar
+  `PublicSettings` en W1. Decisión tomada con el usuario: implementar y cubrir
+  al 100 % los casos 1–11 ahora (hechos, en
+  `whatsapp-template.service.spec.ts`) y dejar el caso 12 documentado como
+  pendiente, sin escribir ningún test deshabilitado (`CLAUDE.md` lo prohíbe
+  explícitamente).
+- **Para cerrar esto**: cuando `B11` esté implementado y publique
+  `build/fixtures/whatsapp-golden.json`, commitear ese archivo en
+  `src/test/fixtures/whatsapp-golden.json` de este repo y añadir un test que
+  lo recorra caso por caso contra `WhatsAppTemplateService.renderMessage()`.
+  Si algún caso no coincide, revisar primero si el desajuste viene de una de
+  las decisiones documentadas arriba (`{{descuento}}` sin descuento, locale
+  de formato) antes de asumir que el bug está en este repo.
+
 ---
 
 ### [ ] W9. Selección múltiple y barra de acción
