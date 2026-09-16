@@ -142,7 +142,7 @@ ofrecer reasignar los productos a otra categoría antes de borrar.
 | `id` | UUID PK | |
 | `sku` | varchar(64) | único, obligatorio, se muestra en el mensaje de WhatsApp |
 | `name` | varchar(200) | obligatorio |
-| `slug` | varchar(220) | único, obligatorio, generado del nombre; base de la URL pública |
+| `slug` | varchar(220) | único, obligatorio, generado del nombre **al crear**; **inmutable después**: es la URL pública que se comparte por WhatsApp y tiene que seguir funcionando. Hacerlo editable exigiría además una redirección 301 desde el antiguo (ver `shop-dashboard-web` §9, mejora futura). |
 | `short_description` | varchar(300) | opcional; se muestra en la tarjeta del grid |
 | `description` | text | opcional; HTML saneado, se muestra en el modal de detalle |
 | `usage_instructions` | text | opcional; HTML saneado; si es null el modal no muestra la pestaña |
@@ -360,6 +360,7 @@ Parámetros:
 | `minPrice` / `maxPrice` | decimal | — | se aplican sobre el **precio efectivo** |
 | `onSale` | bool | — | solo productos con descuento vigente |
 | `inStock` | bool | — | |
+| `ids` | UUID, repetible (máx. 50) | — | Devuelve solo esos productos e **ignora los demás filtros**. Aplica las mismas reglas de visibilidad: un producto no publicado simplemente no aparece, sin error. El orden de la respuesta no sigue al de los `ids`. Lo usa `shop-dashboard-web` para restaurar la selección del visitante en una sola petición. |
 
 Respuesta:
 

@@ -1,0 +1,543 @@
+{
+  "storeName" : "Mi Tienda",
+  "date" : "2026-09-12",
+  "cases" : [ {
+    "name" : "nueve_marcadores_por_producto",
+    "description" : "Renderizado con los 9 marcadores por producto (PROJECT_SPEC.md §7, caso 55).",
+    "templateType" : "single",
+    "template" : "{{producto}} | {{sku}} | {{precio}} | {{precio_lista}} | {{descuento}} | {{cantidad}} | {{subtotal}} | {{moneda}} | {{url}}",
+    "products" : [ {
+      "product" : "Aceite esencial de lavanda 30ml",
+      "price" : 20.00,
+      "listPrice" : 25.00,
+      "quantity" : 2,
+      "url" : "https://tienda.com/p/aceite-esencial-de-lavanda-30ml",
+      "sku" : "ACE-001",
+      "discountPercentage" : 20,
+      "subtotal" : 40.00,
+      "currency" : "USD"
+    } ],
+    "expected" : "Aceite esencial de lavanda 30ml | ACE-001 | $20.00 | $25.00 | 20% | 2 | $40.00 | USD | https://tienda.com/p/aceite-esencial-de-lavanda-30ml"
+  }, {
+    "name" : "cinco_marcadores_globales",
+    "description" : "Renderizado con los 5 marcadores globales: tienda, fecha, total, items, unidades (PROJECT_SPEC.md §7, caso 55).",
+    "templateType" : "multi",
+    "templateHeader" : "{{tienda}} - {{fecha}} - {{total}} - {{items}} - {{unidades}}",
+    "templateItem" : "",
+    "templateFooter" : "",
+    "products" : [ {
+      "product" : "Aceite esencial de lavanda 30ml",
+      "price" : 20.00,
+      "listPrice" : 25.00,
+      "quantity" : 2,
+      "url" : "https://tienda.com/p/aceite-esencial-de-lavanda-30ml",
+      "sku" : "ACE-001",
+      "discountPercentage" : 20,
+      "subtotal" : 40.00,
+      "currency" : "USD"
+    }, {
+      "product" : "Jabón artesanal de avena",
+      "price" : 6.50,
+      "listPrice" : 6.50,
+      "quantity" : 3,
+      "url" : "https://tienda.com/p/jabon-artesanal-de-avena",
+      "sku" : "JAB-014",
+      "discountPercentage" : 0,
+      "subtotal" : 19.50,
+      "currency" : "USD"
+    }, {
+      "product" : "Vela de soya con romero",
+      "price" : 12.00,
+      "listPrice" : 15.00,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/vela-de-soya-con-romero",
+      "sku" : "VEL-007",
+      "discountPercentage" : 20,
+      "subtotal" : 12.00,
+      "currency" : "USD"
+    } ],
+    "expected" : "Mi Tienda - 12/09/2026 - $71.50 - 3 - 6\n\n\n\n"
+  }, {
+    "name" : "marcador_desconocido",
+    "description" : "Un marcador desconocido ({{foo}}) se deja literal, no revienta el renderizado (PROJECT_SPEC.md §7, caso 56).",
+    "templateType" : "single",
+    "template" : "Hola {{foo}}, gracias por tu interés en {{producto}}.",
+    "products" : [ {
+      "product" : "Aceite esencial de lavanda 30ml",
+      "price" : 20.00,
+      "listPrice" : 25.00,
+      "quantity" : 2,
+      "url" : "https://tienda.com/p/aceite-esencial-de-lavanda-30ml",
+      "sku" : "ACE-001",
+      "discountPercentage" : 20,
+      "subtotal" : 40.00,
+      "currency" : "USD"
+    } ],
+    "expected" : "Hola {{foo}}, gracias por tu interés en Aceite esencial de lavanda 30ml."
+  }, {
+    "name" : "multi_tres_items",
+    "description" : "Mensaje multi-producto con 3 ítems: encabezado + 3 líneas + pie con el total correcto (PROJECT_SPEC.md §7, casos 58 y 60).",
+    "templateType" : "multi",
+    "templateHeader" : "¡Hola! Me interesan estos productos de {{tienda}}:",
+    "templateItem" : "• *{{producto}}* (x{{cantidad}}) — {{subtotal}}\n  {{url}}",
+    "templateFooter" : "\n*Total: {{total}}* ({{unidades}} unidades)",
+    "products" : [ {
+      "product" : "Aceite esencial de lavanda 30ml",
+      "price" : 20.00,
+      "listPrice" : 25.00,
+      "quantity" : 2,
+      "url" : "https://tienda.com/p/aceite-esencial-de-lavanda-30ml",
+      "sku" : "ACE-001",
+      "discountPercentage" : 20,
+      "subtotal" : 40.00,
+      "currency" : "USD"
+    }, {
+      "product" : "Jabón artesanal de avena",
+      "price" : 6.50,
+      "listPrice" : 6.50,
+      "quantity" : 3,
+      "url" : "https://tienda.com/p/jabon-artesanal-de-avena",
+      "sku" : "JAB-014",
+      "discountPercentage" : 0,
+      "subtotal" : 19.50,
+      "currency" : "USD"
+    }, {
+      "product" : "Vela de soya con romero",
+      "price" : 12.00,
+      "listPrice" : 15.00,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/vela-de-soya-con-romero",
+      "sku" : "VEL-007",
+      "discountPercentage" : 20,
+      "subtotal" : 12.00,
+      "currency" : "USD"
+    } ],
+    "expected" : "¡Hola! Me interesan estos productos de Mi Tienda:\n• *Aceite esencial de lavanda 30ml* (x2) — $40.00\n  https://tienda.com/p/aceite-esencial-de-lavanda-30ml\n• *Jabón artesanal de avena* (x3) — $19.50\n  https://tienda.com/p/jabon-artesanal-de-avena\n• *Vela de soya con romero* (x1) — $12.00\n  https://tienda.com/p/vela-de-soya-con-romero\n\n*Total: $71.50* (6 unidades)"
+  }, {
+    "name" : "truncado_a_1500",
+    "description" : "Un mensaje de 40 productos supera 1500 caracteres y se trunca con \"… y N productos más\", sin alterar el total del pie (PROJECT_SPEC.md §7, caso 59).",
+    "templateType" : "multi",
+    "templateHeader" : "¡Hola! Me interesan estos productos de {{tienda}}:",
+    "templateItem" : "• *{{producto}}* (x{{cantidad}}) — {{subtotal}}\n  {{url}}",
+    "templateFooter" : "\n*Total: {{total}}* ({{unidades}} unidades)",
+    "products" : [ {
+      "product" : "Producto de catálogo número 1",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-1",
+      "sku" : "SKU-001",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 2",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-2",
+      "sku" : "SKU-002",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 3",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-3",
+      "sku" : "SKU-003",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 4",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-4",
+      "sku" : "SKU-004",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 5",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-5",
+      "sku" : "SKU-005",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 6",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-6",
+      "sku" : "SKU-006",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 7",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-7",
+      "sku" : "SKU-007",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 8",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-8",
+      "sku" : "SKU-008",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 9",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-9",
+      "sku" : "SKU-009",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 10",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-10",
+      "sku" : "SKU-010",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 11",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-11",
+      "sku" : "SKU-011",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 12",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-12",
+      "sku" : "SKU-012",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 13",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-13",
+      "sku" : "SKU-013",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 14",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-14",
+      "sku" : "SKU-014",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 15",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-15",
+      "sku" : "SKU-015",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 16",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-16",
+      "sku" : "SKU-016",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 17",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-17",
+      "sku" : "SKU-017",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 18",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-18",
+      "sku" : "SKU-018",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 19",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-19",
+      "sku" : "SKU-019",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 20",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-20",
+      "sku" : "SKU-020",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 21",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-21",
+      "sku" : "SKU-021",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 22",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-22",
+      "sku" : "SKU-022",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 23",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-23",
+      "sku" : "SKU-023",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 24",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-24",
+      "sku" : "SKU-024",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 25",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-25",
+      "sku" : "SKU-025",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 26",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-26",
+      "sku" : "SKU-026",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 27",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-27",
+      "sku" : "SKU-027",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 28",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-28",
+      "sku" : "SKU-028",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 29",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-29",
+      "sku" : "SKU-029",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 30",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-30",
+      "sku" : "SKU-030",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 31",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-31",
+      "sku" : "SKU-031",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 32",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-32",
+      "sku" : "SKU-032",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 33",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-33",
+      "sku" : "SKU-033",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 34",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-34",
+      "sku" : "SKU-034",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 35",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-35",
+      "sku" : "SKU-035",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 36",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-36",
+      "sku" : "SKU-036",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 37",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-37",
+      "sku" : "SKU-037",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 38",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-38",
+      "sku" : "SKU-038",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 39",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-39",
+      "sku" : "SKU-039",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    }, {
+      "product" : "Producto de catálogo número 40",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/producto-40",
+      "sku" : "SKU-040",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    } ],
+    "expected" : "¡Hola! Me interesan estos productos de Mi Tienda:\n• *Producto de catálogo número 1* (x1) — $9.99\n  https://tienda.com/p/producto-1\n• *Producto de catálogo número 2* (x1) — $9.99\n  https://tienda.com/p/producto-2\n• *Producto de catálogo número 3* (x1) — $9.99\n  https://tienda.com/p/producto-3\n• *Producto de catálogo número 4* (x1) — $9.99\n  https://tienda.com/p/producto-4\n• *Producto de catálogo número 5* (x1) — $9.99\n  https://tienda.com/p/producto-5\n• *Producto de catálogo número 6* (x1) — $9.99\n  https://tienda.com/p/producto-6\n• *Producto de catálogo número 7* (x1) — $9.99\n  https://tienda.com/p/producto-7\n• *Producto de catálogo número 8* (x1) — $9.99\n  https://tienda.com/p/producto-8\n• *Producto de catálogo número 9* (x1) — $9.99\n  https://tienda.com/p/producto-9\n• *Producto de catálogo número 10* (x1) — $9.99\n  https://tienda.com/p/producto-10\n• *Producto de catálogo número 11* (x1) — $9.99\n  https://tienda.com/p/producto-11\n• *Producto de catálogo número 12* (x1) — $9.99\n  https://tienda.com/p/producto-12\n• *Producto de catálogo número 13* (x1) — $9.99\n  https://tienda.com/p/producto-13\n• *Producto de catálogo número 14* (x1) — $9.99\n  https://tienda.com/p/producto-14\n• *Producto de catálogo número 15* (x1) — $9.99\n  https://tienda.com/p/producto-15\n• *Producto de catálogo número 16* (x1) — $9.99\n  https://tienda.com/p/producto-16\n• *Producto de catálogo número 17* (x1) — $9.99\n  https://tienda.com/p/producto-17\n… y 23 productos más\n\n*Total: $399.60* (40 unidades)"
+  }, {
+    "name" : "caracteres_especiales",
+    "description" : "Un nombre de producto con acentos, comillas, '&' y '<>' no rompe el renderizado (PROJECT_SPEC.md §7, análogo a los casos 14/15 de búsqueda, aplicado a plantillas).",
+    "templateType" : "single",
+    "template" : "{{producto}} ({{sku}}) — {{precio}}",
+    "products" : [ {
+      "product" : "Aceite \"Ñandú\" 100% & más <raro>",
+      "price" : 9.99,
+      "listPrice" : 9.99,
+      "quantity" : 1,
+      "url" : "https://tienda.com/p/aceite-nandu",
+      "sku" : "ESP-\"01\"",
+      "discountPercentage" : 0,
+      "subtotal" : 9.99,
+      "currency" : "USD"
+    } ],
+    "expected" : "Aceite \"Ñandú\" 100% & más <raro> (ESP-\"01\") — $9.99"
+  } ]
+}
