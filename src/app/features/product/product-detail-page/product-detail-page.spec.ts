@@ -9,11 +9,18 @@ import { PublicCatalogControllerService } from '../../../api/api/public-catalog-
 import { ProductDetail } from '../../../api/model/product-detail';
 import { MAX_SELECTION } from '../../../core/config/max-selection.token';
 import { SITE_URL } from '../../../core/config/site-url.token';
+import { WHATSAPP_SETTINGS, WhatsAppSettings } from '../../../core/config/whatsapp-settings.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
 import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
 import { ProductDetailPage } from './product-detail-page';
 
 const TEST_ROUTES: Routes = [{ path: 'p/:slug', component: ProductDetailPage }];
+
+const WHATSAPP_SETTINGS_VALUE: WhatsAppSettings = {
+  phoneNumber: '50370000000',
+  storeName: 'Mi Tienda',
+  templates: { single: '{{producto}}', multiHeader: '', multiItem: '', multiFooter: '' },
+};
 
 function buildProduct(overrides: Partial<ProductDetail> = {}): ProductDetail {
   return {
@@ -56,8 +63,14 @@ describe('ProductDetailPage', () => {
         { provide: RESPONSE_INIT, useValue: responseInit },
         { provide: SITE_URL, useValue: 'https://tienda.test' },
         { provide: MAX_SELECTION, useValue: 20 },
+        { provide: WHATSAPP_SETTINGS, useValue: WHATSAPP_SETTINGS_VALUE },
       ],
     });
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('link[rel="canonical"]').forEach((el) => el.remove());
+    document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => el.remove());
   });
 
   it('shows a skeleton while the product is loading', async () => {
@@ -83,6 +96,39 @@ describe('ProductDetailPage', () => {
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
       'https://tienda.test/p/aceite-esencial-de-lavanda-30ml',
     );
+  });
+
+  it('sets canonical, og:site_name, Twitter Card and Product JSON-LD (W11)', async () => {
+    getProduct.mockReturnValue(of(buildProduct()));
+
+    await RouterTestingHarness.create('/p/aceite-esencial-de-lavanda-30ml');
+
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://tienda.test/p/aceite-esencial-de-lavanda-30ml',
+    );
+    expect(document.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe('Mi Tienda');
+    expect(document.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe(
+      'summary_large_image',
+    );
+    expect(document.querySelector('meta[name="twitter:image"]')?.getAttribute('content')).toBe(
+      'https://tienda.test/media/p1/detail.webp',
+    );
+
+    const jsonLd = JSON.parse(document.querySelector('script#ld-product')?.textContent ?? '{}');
+    expect(jsonLd).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: 'Aceite esencial de lavanda 30ml',
+      sku: 'ACE-001',
+      brand: { '@type': 'Brand', name: 'Mi Tienda' },
+      offers: {
+        '@type': 'Offer',
+        url: 'https://tienda.test/p/aceite-esencial-de-lavanda-30ml',
+        priceCurrency: 'USD',
+        price: 25,
+        availability: 'https://schema.org/InStock',
+      },
+    });
   });
 
   it('renders "not found" and sets a real 404 status for a nonexistent slug (case 42)', async () => {

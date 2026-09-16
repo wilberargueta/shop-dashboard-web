@@ -30,6 +30,22 @@ function renderApp() {
 describe('App', () => {
   beforeEach(() => sessionStorage.clear());
 
+  afterEach(() => {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => el.remove());
+  });
+
+  it('sets Organization JSON-LD once, app-wide (W11)', async () => {
+    await renderApp();
+
+    const jsonLd = JSON.parse(document.querySelector('script#ld-organization')?.textContent ?? '{}');
+    expect(jsonLd).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Mi Tienda',
+      url: 'http://localhost:4200',
+    });
+  });
+
   it('renders the router outlet without throwing', async () => {
     const { container } = await renderApp();
 

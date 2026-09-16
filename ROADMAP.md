@@ -1004,7 +1004,7 @@ Botón de WhatsApp individual en la tarjeta y en el modal.
 
 ## Fase 4 — SEO, i18n y pulido
 
-### [ ] W11. SEO completo
+### [x] W11. SEO completo
 
 Meta tags dinámicos por página (título, descripción, Open Graph con imagen
 absoluta, canonical, Twitter Card). JSON-LD: `Product` + `Offer` en el detalle,
@@ -1018,6 +1018,70 @@ absoluta, canonical, Twitter Card). JSON-LD: `Product` + `Offer` en el detalle,
 - `og:image` es una URL absoluta a la versión `detail`.
 - El canonical de `/` no incluye parámetros de filtro.
 - Lighthouse SEO = 100.
+
+**Desviaciones:**
+- **`SeoService` nuevo** (`core/seo/seo.service.ts`), compartido por
+  `CatalogPage` y `ProductDetailPage`: envuelve `Title`/`Meta` (ya SSR-seguros)
+  más `<link rel="canonical">` y bloques `<script type="application/ld+json">`,
+  que Angular no ofrece de fábrica. Se inyecta `DOCUMENT` de `@angular/common`
+  (nunca el `document` global) — la misma técnica que usan internamente
+  `Meta`/`Title`, ya probada por el caso 41 (W6). Cada bloque JSON-LD lleva un
+  `id` propio (`ld-product`, `ld-itemlist`, `ld-breadcrumb`, `ld-organization`)
+  para que cada página limpie solo el suyo en `DestroyRef.onDestroy()` sin
+  tocar el de `App` (`Organization`, montado una sola vez). `og:image`/
+  `twitter:image` se retiran explícitamente cuando la página no tiene imagen,
+  porque `<head>` es compartido entre páginas y no se recrea por componente.
+- **Sin componente de layout real**: `src/app/layout/` sigue vacío desde W0
+  (ninguna tarea lo ha construido todavía). `Organization` JSON-LD se pone en
+  `App` (`src/app/app.ts`), el único componente montado siempre — no se
+  inventó infraestructura de layout nueva solo para esto.
+- **Sitemap sin URLs de categoría, decisión tomada con el usuario**:
+  `PROJECT_SPEC.md` §9 menciona "productos publicados y categorías activas",
+  pero no existe ninguna ruta de categoría en `app.routes.ts` — las categorías
+  son filtros de query string en `/`, que el propio `robots.txt` de esta tarea
+  excluye con `Disallow: /*?` por ser contenido duplicado. El sitemap lista
+  solo `/` + un `<url>` por producto publicado. Documentado como desviación de
+  una ambigüedad de la especificación, no como un hueco sin resolver.
+- **`PublicSettings`/B11 sigue bloqueado, decisión tomada con el usuario**:
+  mismo criterio que W1/W6/W8/W9/W10. `og:site_name` y `Organization.name`
+  reutilizan `WHATSAPP_SETTINGS.storeName` (ya existía, `'Mi Tienda'`) en vez
+  de crear un token nuevo. Sin `settings.seo.default_og_image_id`: un producto
+  sin imágenes no publica `og:image`/`twitter:image` (mismo criterio que W6),
+  y `Organization` no lleva `logo` (`settings.store.logo_image_id`, mismo
+  bloqueo). Regenerar el cliente y construir un `SettingsService` real sigue
+  siendo la tarea aparte que W10 ya anotó.
+- **`Product.brand.name` reutiliza `storeName`**: el modelo público no expone
+  una marca por producto y esta tienda no tiene varias marcas propias — no es
+  un campo de `ProductDetail` que se esté ignorando, simplemente no existe.
+- **`/sitemap.xml` y `/robots.txt` son rutas de Express puras, no Angular**:
+  nueva carpeta `src/server/seo/` (hermana de `src/server.ts`, dentro de
+  `src/`, cubierta por el mismo `tsconfig.app.json`/`tsconfig.spec.json` que ya
+  compila `server.ts` — verificado). No pasan por `AngularNodeAppEngine`: no
+  son componentes ni tienen entrada en `app.routes.server.ts`. Generación del
+  sitemap con `fetch` directo contra `API_BASE_URL` (nunca el cliente generado
+  de `src/app/api/`, que exige el árbol de Angular bootstrapeado — hacerlo así
+  para algo cacheado una hora habría sido desproporcionado); solo se importan
+  **tipos** del cliente generado (`PageResponseProductCard`), nunca su código.
+  El header `Accept: application/json` explícito es obligatorio: mismo
+  problema de negociación de contenido que W1 encontró y corrigió en
+  `ApiConfiguration` para el cliente generado — aquí no hay cliente de por
+  medio, así que hay que replicarlo a mano. Caché en memoria con TTL de 1
+  hora, misma instancia única sin Redis que usa el propio backend para su
+  límite de peticiones (`ARQUITECTURA.md` §7).
+- **Verificado sin backend disponible en este entorno** (mismo motivo que
+  W3/W5/W6/W7/W9/W10): con `pnpm start` (SSR) se confirmó con `curl` que el
+  HTML crudo de `/` trae title/canonical/`og:*`/Twitter Card y los bloques
+  JSON-LD `ld-organization`/`ld-breadcrumb` (el `ld-itemlist` depende del
+  primer lote resuelto, que no llega sin backend — comportamiento esperado).
+  `/robots.txt` devuelve el contenido correcto. `/sitemap.xml` intenta
+  contactar al backend real y falla con `fetch failed` (esperado,
+  `localhost:8080` no responde en este entorno) — nunca revienta el proceso
+  del servidor. La lógica pura de recorrido de páginas/construcción de
+  XML/caché está cubierta al 100% con tests unitarios que no dependen del
+  backend. Queda pendiente, igual que en tareas anteriores: recorrer
+  `/sitemap.xml` de verdad contra `shop-backend-service` levantado (caso 46),
+  pegar una URL de producto real en la herramienta de resultados enriquecidos
+  de Google, y correr Lighthouse SEO sobre `/` con datos reales.
 
 ---
 

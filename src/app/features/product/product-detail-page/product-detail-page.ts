@@ -1,11 +1,13 @@
-import { Component, RESPONSE_INIT, computed, effect, inject, input, untracked } from '@angular/core';
+import { Component, DestroyRef, RESPONSE_INIT, computed, effect, inject, input, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { ProductDetail } from '../../../api/model/product-detail';
+import { WHATSAPP_SETTINGS } from '../../../core/config/whatsapp-settings.token';
 import { SITE_URL } from '../../../core/config/site-url.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
+import { SeoService } from '../../../core/seo/seo.service';
+import { buildProductJsonLd, resolveAbsoluteDetailImage } from '../../../core/seo/seo.schema';
 import { ProductDetailSkeleton } from '../../../shared/product-detail-skeleton/product-detail-skeleton';
 import { SelectionService } from '../../selection/selection.service';
 import { toSelectionLine } from '../../selection/selection.model';
@@ -53,9 +55,10 @@ export class ProductDetailPage {
 
   private readonly publicCatalogController = inject(PublicCatalogControllerService);
   private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
-  private readonly meta = inject(Meta);
-  private readonly title = inject(Title);
+  private readonly seo = inject(SeoService);
+  private readonly storeName = inject(WHATSAPP_SETTINGS).storeName;
   private readonly siteUrl = inject(SITE_URL);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly selection = inject(SelectionService);
   private readonly whatsappPreview = inject(WhatsAppPreviewService);
 
@@ -97,6 +100,8 @@ export class ProductDetailPage {
       }
       untracked(() => this.updateMetaTags(product));
     });
+
+    this.destroyRef.onDestroy(() => this.seo.removeJsonLd('ld-product'));
   }
 
   protected onAddToSelection(event: AddToSelectionEvent): void {
@@ -117,22 +122,23 @@ export class ProductDetailPage {
 
   private updateMetaTags(product: ProductDetail): void {
     const url = `${this.siteUrl}/p/${this.slug()}`;
-
-    this.title.setTitle(product.name ?? '');
-    this.meta.updateTag({ name: 'description', content: product.shortDescription ?? '' });
-    this.meta.updateTag({ property: 'og:type', content: 'product' });
-    this.meta.updateTag({ property: 'og:title', content: product.name ?? '' });
-    this.meta.updateTag({ property: 'og:description', content: product.shortDescription ?? '' });
-    this.meta.updateTag({ property: 'og:url', content: url });
-
     // Sin `settings.seo.default_og_image_id` disponible todavía (bloqueado
     // por B11 del backend, misma desviación documentada en W1): un producto
-    // sin imágenes simplemente no publica `og:image`, en vez de inventar un
-    // respaldo.
-    const image = product.images?.[0]?.detail;
-    const imageUrl = image?.webp ?? image?.jpeg;
-    if (imageUrl) {
-      this.meta.updateTag({ property: 'og:image', content: `${this.siteUrl}${imageUrl}` });
-    }
+    // sin imágenes simplemente no publica `og:image`/`twitter:image`, en vez
+    // de inventar un respaldo.
+    const image = resolveAbsoluteDetailImage(this.siteUrl, product.images);
+
+    this.seo.updatePageTags({
+      title: product.name ?? '',
+      description: product.shortDescription ?? '',
+      url,
+      type: 'product',
+      image,
+    });
+
+    this.seo.setJsonLd(
+      'ld-product',
+      buildProductJsonLd({ siteUrl: this.siteUrl, storeName: this.storeName, url, product }),
+    );
   }
 }

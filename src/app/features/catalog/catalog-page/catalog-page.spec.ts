@@ -8,10 +8,18 @@ import { Subject, of, throwError } from 'rxjs';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { PageResponseProductCard } from '../../../api/model/page-response-product-card';
 import { MAX_SELECTION } from '../../../core/config/max-selection.token';
+import { SITE_URL } from '../../../core/config/site-url.token';
+import { WHATSAPP_SETTINGS, WhatsAppSettings } from '../../../core/config/whatsapp-settings.token';
 import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
 import { CatalogPage } from './catalog-page';
 
 const TEST_ROUTES: Routes = [{ path: '**', component: CatalogPage }];
+
+const WHATSAPP_SETTINGS_VALUE: WhatsAppSettings = {
+  phoneNumber: '50370000000',
+  storeName: 'Mi Tienda',
+  templates: { single: '{{producto}}', multiHeader: '', multiItem: '', multiFooter: '' },
+};
 
 function buildResponse(page: number, count: number, hasNext: boolean): PageResponseProductCard {
   return {
@@ -86,8 +94,15 @@ describe('CatalogPage', () => {
         provideLocationMocks(),
         { provide: PublicCatalogControllerService, useValue: { listProducts, listCategories, getProduct } },
         { provide: MAX_SELECTION, useValue: 20 },
+        { provide: SITE_URL, useValue: 'https://tienda.test' },
+        { provide: WHATSAPP_SETTINGS, useValue: WHATSAPP_SETTINGS_VALUE },
       ],
     });
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('link[rel="canonical"]').forEach((el) => el.remove());
+    document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => el.remove());
   });
 
   /**
@@ -284,6 +299,53 @@ describe('CatalogPage', () => {
 
     expect(harness.routeNativeElement?.textContent).toContain('Aceites (12)');
     expect(harness.routeNativeElement?.textContent).toContain('Cremas (5)');
+  });
+
+  describe('SEO (W11)', () => {
+    it('sets title, canonical, Open Graph and BreadcrumbList JSON-LD unconditionally', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 3, true)));
+
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      expect(document.title).toBe('Mi Tienda — Catálogo');
+      expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://tienda.test/');
+      expect(document.querySelector('meta[property="og:type"]')?.getAttribute('content')).toBe('website');
+      expect(document.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe('Mi Tienda');
+
+      const breadcrumb = JSON.parse(document.querySelector('script#ld-breadcrumb')?.textContent ?? '{}');
+      expect(breadcrumb).toEqual({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Inicio', item: 'https://tienda.test/' }],
+      });
+    });
+
+    it('sets an ItemList JSON-LD block once the first batch resolves', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 2, true)));
+
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      const itemList = JSON.parse(document.querySelector('script#ld-itemlist')?.textContent ?? '{}');
+      expect(itemList).toEqual({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, url: 'https://tienda.test/p/p0-0', name: 'Producto 0-0' },
+          { '@type': 'ListItem', position: 2, url: 'https://tienda.test/p/p0-1', name: 'Producto 0-1' },
+        ],
+      });
+    });
+
+    it('the canonical never reflects an active filter', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+
+      const harness = await createHarness('/?category=aceites&sort=newest&q=lavanda');
+      await harness.fixture.whenStable();
+
+      expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://tienda.test/');
+    });
   });
 
   describe('W7 — modal de detalle sobre el grid', () => {

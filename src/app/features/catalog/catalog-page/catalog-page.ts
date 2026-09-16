@@ -16,6 +16,10 @@ import {
   PublicCatalogControllerService,
 } from '../../../api/api/public-catalog-controller.service';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
+import { SITE_URL } from '../../../core/config/site-url.token';
+import { WHATSAPP_SETTINGS } from '../../../core/config/whatsapp-settings.token';
+import { SeoService } from '../../../core/seo/seo.service';
+import { buildBreadcrumbJsonLd, buildItemListJsonLd } from '../../../core/seo/seo.schema';
 import { ProductDetailModal } from '../../product/product-detail-modal/product-detail-modal';
 import { SelectionService } from '../../selection/selection.service';
 import { toSelectionLine } from '../../selection/selection.model';
@@ -55,6 +59,9 @@ export class CatalogPage {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly selection = inject(SelectionService);
   private readonly whatsappPreview = inject(WhatsAppPreviewService);
+  private readonly seo = inject(SeoService);
+  private readonly siteUrl = inject(SITE_URL);
+  private readonly storeName = inject(WHATSAPP_SETTINGS).storeName;
 
   protected readonly openSlug = signal<string | null>(null);
   protected readonly modalOrigin = signal<HTMLElement | null>(null);
@@ -158,6 +165,34 @@ export class CatalogPage {
   protected readonly selectionCapReached = this.selection.capReached;
 
   constructor() {
+    // Título/descripción/canonical/OG/BreadcrumbList no dependen de datos ni
+    // de filtros: se fijan una sola vez, sin leer `catalogQuery.filters()`,
+    // así el canonical de `/` nunca refleja un filtro/orden/página (spec §9).
+    const canonicalUrl = `${this.siteUrl}/`;
+    this.seo.updatePageTags({
+      title: `${this.storeName} — Catálogo`,
+      description: `Explora el catálogo de productos de ${this.storeName}.`,
+      url: canonicalUrl,
+      type: 'website',
+    });
+    this.seo.setJsonLd('ld-breadcrumb', buildBreadcrumbJsonLd(this.siteUrl));
+    this.destroyRef.onDestroy(() => {
+      this.seo.removeJsonLd('ld-itemlist');
+      this.seo.removeJsonLd('ld-breadcrumb');
+    });
+
+    // El `ItemList` sí depende del primer lote resuelto (el mismo signal que
+    // alimenta el grid): mismo patrón `untracked()` que el resto del componente.
+    effect(() => {
+      if (this.pageResource.status() !== 'resolved') {
+        return;
+      }
+      const products = this.products();
+      untracked(() => {
+        this.seo.setJsonLd('ld-itemlist', buildItemListJsonLd({ siteUrl: this.siteUrl, products }));
+      });
+    });
+
     // El reseteo de la lista y la página ya lo hacen los `linkedSignal` de
     // arriba; aquí solo quedan los efectos secundarios que no participan en
     // qué se pide a la API: limpiar el estado de "cargando más"/error de un

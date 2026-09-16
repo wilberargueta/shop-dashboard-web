@@ -6,23 +6,41 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { buildRobotsTxt } from './server/seo/robots-txt.builder';
+import { buildSitemapXml } from './server/seo/sitemap-xml.builder';
+import { getCachedSitemapXml } from './server/seo/sitemap-cache';
+import { fetchPublishedProductSlugs } from './server/seo/sitemap-slugs';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+// Mismas variables que ya lee app.config.server.ts — sin nombres nuevos.
+const siteUrl = process.env['SITE_URL'] ?? 'http://localhost:4200';
+const apiBaseUrl = process.env['API_BASE_URL'] ?? 'http://localhost:8080';
+
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * `/robots.txt` y `/sitemap.xml` (W11): rutas técnicas, nunca pasan por
+ * `AngularNodeAppEngine` — no son componentes ni tienen `RenderMode` en
+ * `app.routes.server.ts`. `/sitemap.xml` se cachea 1 hora en memoria
+ * (PROJECT_SPEC.md §9).
  */
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(buildRobotsTxt(siteUrl));
+});
+
+app.get('/sitemap.xml', async (_req, res, next) => {
+  try {
+    const xml = await getCachedSitemapXml(async () => {
+      const slugs = await fetchPublishedProductSlugs(apiBaseUrl);
+      return buildSitemapXml(siteUrl, slugs);
+    });
+    res.type('application/xml').send(xml);
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * Serve static files from /browser
