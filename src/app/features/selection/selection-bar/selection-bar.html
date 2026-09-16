@@ -1,0 +1,20 @@
+<div class="selection-bar" role="region" i18n-aria-label="@@selectionBar.regionLabel" aria-label="Selección de productos">
+  <p class="selection-bar__summary">
+    @if (count() === 1) {
+      <span i18n="@@selectionBar.countSingular">1 producto</span>
+    } @else {
+      <span i18n="@@selectionBar.countPlural">{{ count() }} productos</span>
+    }
+    <span class="selection-bar__separator" aria-hidden="true">·</span>
+    <span class="selection-bar__total">{{ subtotal() | currency: currency() }}</span>
+  </p>
+
+  <div class="selection-bar__actions">
+    <button type="button" class="selection-bar__view" (click)="viewRequested.emit()">
+      <span i18n="@@selectionBar.view">Ver</span>
+    </button>
+    <button type="button" class="selection-bar__send" (click)="sendRequested.emit()">
+      <span i18n="@@selectionBar.send">Enviar por WhatsApp</span>
+    </button>
+  </div>
+</div>

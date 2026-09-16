@@ -1,1 +1,4 @@
-<router-outlet />
+<div [attr.inert]="selection.panelOpen() ? '' : null">
+  <router-outlet />
+</div>
+<app-selection-root />

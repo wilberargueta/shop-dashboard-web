@@ -17,6 +17,7 @@ import {
 } from '../../../api/api/public-catalog-controller.service';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
 import { ProductDetailModal } from '../../product/product-detail-modal/product-detail-modal';
+import { SelectionService } from '../../selection/selection.service';
 import { CatalogFilterMobilePanel } from '../catalog-filter-mobile-panel/catalog-filter-mobile-panel';
 import { CatalogFilterPanel } from '../catalog-filter-panel/catalog-filter-panel';
 import { CatalogLoadMore } from '../catalog-load-more/catalog-load-more';
@@ -50,6 +51,7 @@ export class CatalogPage {
   private readonly publicCatalogController = inject(PublicCatalogControllerService);
   private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly selection = inject(SelectionService);
 
   protected readonly openSlug = signal<string | null>(null);
   protected readonly modalOrigin = signal<HTMLElement | null>(null);
@@ -147,6 +149,10 @@ export class CatalogPage {
   );
   protected readonly isLoadingMore = this.nextPageInFlight.asReadonly();
   protected readonly hasLoadError = this.nextPageError.asReadonly();
+  protected readonly selectedProductIds = computed(
+    () => new Set(this.selection.lines().map((line) => line.productId)),
+  );
+  protected readonly selectionCapReached = this.selection.capReached;
 
   constructor() {
     // El reseteo de la lista y la página ya lo hacen los `linkedSignal` de
@@ -238,6 +244,10 @@ export class CatalogPage {
     this.modalOrigin.set(origin);
     this.openSlug.set(slug);
     this.location.go(`${DETAIL_PATH_PREFIX}${slug}`);
+  }
+
+  protected onSelectionToggle(product: ProductCardDto): void {
+    this.selection.toggle(product);
   }
 
   /** Cierre explícito (X, fondo, Escape): saca del historial la entrada que empujó `onProductOpen`. */

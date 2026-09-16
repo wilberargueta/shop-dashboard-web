@@ -18,9 +18,13 @@ export class ProductGrid {
   /** Ya hay productos en pantalla; se está pidiendo el siguiente lote (W4). */
   readonly loadingMore = input(false);
   readonly skeletonCount = input(PRIORITY_COUNT);
+  readonly selectedProductIds = input<ReadonlySet<string>>(new Set());
+  readonly selectionCapReached = input(false);
 
   /** Reenvía el `open` de la tarjeta que se pulsó (W7): sin lógica propia. */
   readonly productOpen = output<ProductCardOpenEvent>();
+  /** Reenvía el `selectionToggle` de la tarjeta que se pulsó (W9): sin lógica propia. */
+  readonly selectionToggle = output<ProductCardDto>();
 
   protected readonly priorityCount = PRIORITY_COUNT;
   protected readonly showSkeletons = computed(() => this.loading() && this.products().length === 0);

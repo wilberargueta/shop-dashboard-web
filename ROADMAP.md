@@ -812,7 +812,7 @@ codificación correcta.
 
 ---
 
-### [ ] W9. Selección múltiple y barra de acción
+### [x] W9. Selección múltiple y barra de acción
 
 `SelectionService` con signals, persistido en `sessionStorage` guardando **solo
 `{ productId, cantidad }`**. Al restaurar, refresca los datos desde la API y
@@ -829,6 +829,80 @@ Funciona en servidor devolviendo selección vacía.
 - El caso 30: un producto despublicado desaparece al restaurar.
 - El SSR no revienta al no existir `sessionStorage`.
 - La barra es operable con teclado y se anuncia al aparecer.
+
+**Desviaciones:**
+- **Persistido `{ productId, slug, cantidad }`, no solo `{ productId, cantidad }`**
+  (decisión tomada con el usuario): la API pública no tiene forma de buscar
+  un producto por `id` ni en lote — solo `GET /products/{slug}` (uno, por
+  slug) y `GET /products` (lista paginada, sin filtro por id). Restaurar la
+  selección exige volver a pedir cada línea por su slug
+  (`getProduct({slug})`), así que `slug` se persiste además de `productId`
+  para poder hacerlo. Nunca se guarda el precio, que es lo que la regla de
+  `CLAUDE.md` protege de verdad. **Nota para cuando se retome el trabajo**:
+  el `ROADMAP.md` de `shop-backend-service` ya tiene anotada la tarea B8.1
+  ("Filtro `ids` en el listado público", con la fila correspondiente ya en
+  `docs/ARQUITECTURA.md` §5.1 de ese repo) pensada exactamente para este
+  caso — en cuanto exista y se regenere el cliente, el restore se puede
+  simplificar a una sola llamada a `listProducts({ids})` y `slug` deja de
+  hacer falta en el storage. No estaba implementada todavía al hacer esta
+  tarea (verificado contra el cliente generado real), así que no se usó.
+- **Restore descarta una línea ante cualquier fallo al refrescarla, no solo
+  ante un 404**: el caso 30 solo nombra el despublicado, pero tras un fallo
+  no hay ningún valor de reserva seguro (el caso 29 prohíbe mostrar un precio
+  no verificado), así que cualquier error (404, 500, red) descarta esa línea
+  igual. Cubierto con un test que usa un error 500 además del 404.
+- **`catalog.max_selection` fijo en 20 vía `MAX_SELECTION`
+  (`core/config/max-selection.token.ts`)**: mismo bloqueo que
+  `PublicSettings` en W1/W8 (B11 del backend, sin terminar). Mismo patrón que
+  `SITE_URL`/`API_BASE_URL`. Valor por defecto de `ARQUITECTURA.md` §4.6.
+- **Casilla de selección en `ProductCard` y control "Añadir/Quitar de la
+  selección" en `ProductDetailContent` incluidos en esta tarea** (decisión
+  tomada con el usuario): el ROADMAP solo asigna a W10 el botón individual de
+  WhatsApp; sin la casilla/control aquí, los casos 26-31 no se podían
+  ejercitar con una interacción real de usuario. `ProductDetailContent` usa
+  un botón único (no una casilla, a diferencia de la tarjeta), porque ahí se
+  ve un solo producto a la vez.
+- **`SelectionService` monta la barra/panel una sola vez, en `App`, hermano
+  de `<router-outlet>`** (`SelectionRoot`, `features/selection/selection-root/`):
+  la selección sobrevive a navegar entre `/`, `/p/:slug` y el modal; un
+  montaje por página destruiría y recrearía la región `aria-live`, que
+  algunos lectores de pantalla no anuncian si se acaba de insertar. `App`
+  también envuelve `<router-outlet>` en un contenedor con `inert` condicional
+  al panel de selección abierto (mismo criterio de accesibilidad que el
+  modal de detalle, W7 §6 regla 7).
+- **Restore-and-refresh con RxJS plano (`forkJoin` + `catchError` por
+  petición), no `resource()`/`rxResource()`**: es un fan-out de N peticiones
+  de una sola vez al construir el servicio, no un fetch reactivo atado a un
+  `params` que cambia — el patrón de `resource()` no encaja. Con
+  `catchError(() => of(null))` por petición interna, el fallo de una línea
+  nunca aborta las demás y tampoco hace falta desenvolver
+  `ResourceWrappedError`/`.cause` (el problema documentado en W6): el
+  `apiErrorInterceptor` ya entrega un `ApiError` plano, sin envolver, que
+  `catchError` lee directo.
+- **"Enviar por WhatsApp" abre el panel de selección en vez de tener su
+  propio flujo en esta tarea** (decisión tomada con el usuario): el
+  renderizado real del mensaje (W10) necesita las plantillas de WhatsApp, que
+  tampoco están disponibles todavía vía `PublicSettings` (mismo bloqueo de
+  B11). En vez de dejar el botón sin ningún efecto, abre el mismo panel que
+  "Ver" — comportamiento interino explícito, documentado, que W10 reemplaza
+  por la vista previa real.
+- **Efectos de servicio (`effect()` en el constructor de `SelectionService`,
+  fuera de cualquier componente) no flushean solos en los tests sin una vista
+  real**: primer caso del repo donde un servicio `providedIn: 'root'` usa
+  `effect()`. Sin un `ComponentFixture` de por medio, hace falta
+  `TestBed.tick()` explícito para forzar el flush antes de leer
+  `sessionStorage` en el test del caso 28 — documentado como comentario en
+  `selection.service.spec.ts`.
+- **Verificado con SSR real (`pnpm build` + servidor Node), sin backend
+  disponible en este entorno** (mismo motivo que W3/W5/W6/W7: el backend real
+  no está accesible en este sandbox): `curl` sobre `/` confirma que
+  `<app-selection-root>` renderiza en servidor con la región `aria-live`
+  vacía y sin ninguna barra/panel en el HTML crudo — selección vacía en
+  servidor, tal como pide el criterio de aceptación. `curl` sobre `/p/:slug`
+  confirma que inyectar `SelectionService` en `ProductDetailPage`/
+  `ProductDetailModal` tampoco revienta el render en servidor. La
+  verificación completa con datos reales (casos 26-31 de extremo a extremo
+  contra el backend real) queda pendiente, igual que en tareas anteriores.
 
 ---
 

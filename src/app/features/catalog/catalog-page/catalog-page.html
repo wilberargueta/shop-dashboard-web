@@ -33,7 +33,10 @@
           [products]="products()"
           [loading]="isLoadingFirst()"
           [loadingMore]="isLoadingMore()"
+          [selectedProductIds]="selectedProductIds()"
+          [selectionCapReached]="selectionCapReached()"
           (productOpen)="onProductOpen($event)"
+          (selectionToggle)="onSelectionToggle($event)"
         />
         <app-catalog-load-more
           [hasNext]="hasNext()"

@@ -1,6 +1,12 @@
 <main class="product-detail-page">
   @if (product(); as product) {
-    <app-product-detail-content [product]="product" />
+    <app-product-detail-content
+      [product]="product"
+      [selected]="isSelected()"
+      [selectionDisabled]="selectionCapReached()"
+      (addToSelection)="onAddToSelection($event)"
+      (removeFromSelection)="onRemoveFromSelection($event)"
+    />
   } @else if (notFound()) {
     <div class="product-detail-page__not-found">
       <h1 i18n="@@productDetailPage.notFoundTitle">Producto no encontrado</h1>

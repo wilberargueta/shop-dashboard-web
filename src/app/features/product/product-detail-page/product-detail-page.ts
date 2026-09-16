@@ -7,7 +7,8 @@ import { ProductDetail } from '../../../api/model/product-detail';
 import { SITE_URL } from '../../../core/config/site-url.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
 import { ProductDetailSkeleton } from '../../../shared/product-detail-skeleton/product-detail-skeleton';
-import { ProductDetailContent } from '../product-detail-content/product-detail-content';
+import { SelectionService } from '../../selection/selection.service';
+import { AddToSelectionEvent, ProductDetailContent } from '../product-detail-content/product-detail-content';
 
 /**
  * `resource()`/`rxResource()` envuelve cualquier error que no "parezca" un
@@ -49,6 +50,7 @@ export class ProductDetailPage {
   private readonly meta = inject(Meta);
   private readonly title = inject(Title);
   private readonly siteUrl = inject(SITE_URL);
+  protected readonly selection = inject(SelectionService);
 
   private readonly productResource = rxResource({
     params: this.slug,
@@ -62,6 +64,11 @@ export class ProductDetailPage {
   protected readonly product = computed(() =>
     this.productResource.status() === 'resolved' ? this.productResource.value() : undefined,
   );
+  protected readonly isSelected = computed(() => {
+    const productId = this.product()?.id;
+    return productId !== undefined && this.selection.isSelected(productId);
+  });
+  protected readonly selectionCapReached = this.selection.capReached;
 
   constructor() {
     effect(() => {
@@ -83,6 +90,14 @@ export class ProductDetailPage {
       }
       untracked(() => this.updateMetaTags(product));
     });
+  }
+
+  protected onAddToSelection(event: AddToSelectionEvent): void {
+    this.selection.add(event.product, event.quantity);
+  }
+
+  protected onRemoveFromSelection(productId: string): void {
+    this.selection.remove(productId);
   }
 
   private updateMetaTags(product: ProductDetail): void {

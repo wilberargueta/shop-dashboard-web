@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/angular';
+import { render, screen, fireEvent } from '@testing-library/angular';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
 import { ProductCard } from './product-card';
 
@@ -149,5 +149,58 @@ describe('ProductCard', () => {
 
     expect(event.defaultPrevented).toBe(false);
     expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('case 26 (W9): the checkbox reflects the selected input and emits selectionToggle with the product', async () => {
+    const onSelectionToggle = vi.fn();
+    await render(ProductCard, {
+      inputs: { product: buildProduct(), selected: false },
+      on: { selectionToggle: onSelectionToggle },
+    });
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Seleccionar Aceite esencial de lavanda 30ml' });
+    expect(checkbox.getAttribute('aria-checked')).toBe('false');
+
+    fireEvent.click(checkbox);
+
+    expect(onSelectionToggle).toHaveBeenCalledWith(buildProduct());
+  });
+
+  it('shows the checkbox as checked when selected is true', async () => {
+    await render(ProductCard, { inputs: { product: buildProduct(), selected: true } });
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Seleccionar Aceite esencial de lavanda 30ml' });
+    expect(checkbox.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('case 31 (W9): a non-selected card is aria-disabled with an accessible reason when the cap is reached', async () => {
+    const onSelectionToggle = vi.fn();
+    const { container } = await render(ProductCard, {
+      inputs: { product: buildProduct(), selected: false, selectionDisabled: true },
+      on: { selectionToggle: onSelectionToggle },
+    });
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Seleccionar Aceite esencial de lavanda 30ml' });
+    expect(checkbox.getAttribute('aria-disabled')).toBe('true');
+    const describedById = checkbox.getAttribute('aria-describedby');
+    expect(describedById).toBeTruthy();
+    expect(container.querySelector(`#${describedById}`)?.textContent).toContain('Límite de selección alcanzado');
+
+    fireEvent.click(checkbox);
+    expect(onSelectionToggle).not.toHaveBeenCalled();
+  });
+
+  it('an already-selected card stays operable even when the cap is reached', async () => {
+    const onSelectionToggle = vi.fn();
+    await render(ProductCard, {
+      inputs: { product: buildProduct(), selected: true, selectionDisabled: true },
+      on: { selectionToggle: onSelectionToggle },
+    });
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Seleccionar Aceite esencial de lavanda 30ml' });
+    expect(checkbox.getAttribute('aria-disabled')).toBeNull();
+
+    fireEvent.click(checkbox);
+    expect(onSelectionToggle).toHaveBeenCalledWith(buildProduct());
   });
 });

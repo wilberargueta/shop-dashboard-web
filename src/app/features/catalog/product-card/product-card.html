@@ -1,4 +1,22 @@
 <article class="product-card" [class.product-card--out-of-stock]="product().inStock === false">
+  <button
+    type="button"
+    role="checkbox"
+    class="product-card__select"
+    [attr.aria-checked]="selected()"
+    [attr.aria-disabled]="selectionDisabled() && !selected() ? 'true' : null"
+    [attr.aria-describedby]="selectionDisabled() && !selected() ? selectionCapReasonId() : null"
+    (click)="onSelectionToggle()"
+  >
+    <span class="product-card__select-mark" aria-hidden="true"></span>
+    <span class="visually-hidden" i18n="@@productCard.selectLabel">Seleccionar {{ product().name }}</span>
+  </button>
+  @if (selectionDisabled() && !selected()) {
+    <span [id]="selectionCapReasonId()" class="visually-hidden" i18n="@@productCard.selectionCapReason"
+      >Límite de selección alcanzado.</span
+    >
+  }
+
   <a
     class="product-card__link"
     [attr.href]="detailHref()"

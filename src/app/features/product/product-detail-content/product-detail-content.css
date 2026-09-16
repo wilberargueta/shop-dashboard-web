@@ -55,6 +55,22 @@
   font-size: var(--font-size-base);
 }
 
+.product-detail-content__add-button {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 600;
+}
+
+.product-detail-content__add-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (min-width: 1024px) {
   .product-detail-content {
     flex-direction: row;

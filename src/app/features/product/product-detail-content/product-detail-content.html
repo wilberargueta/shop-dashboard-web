@@ -38,7 +38,37 @@
       </p>
     }
 
-    <app-quantity-stepper [disabled]="product().inStock === false" />
+    <app-quantity-stepper
+      [quantity]="addQuantity()"
+      (quantityChange)="addQuantity.set($event)"
+      [min]="1"
+      [disabled]="product().inStock === false || selected()"
+    />
+
+    <button
+      type="button"
+      class="product-detail-content__add-button"
+      [attr.aria-disabled]="addDisabled() ? 'true' : null"
+      [attr.aria-describedby]="addDisabled() ? addReasonId() : null"
+      (click)="onAddClick()"
+    >
+      @if (selected()) {
+        <span i18n="@@productDetailContent.removeFromSelection">Quitar de la selección</span>
+      } @else {
+        <span i18n="@@productDetailContent.addToSelection">Añadir a la selección</span>
+      }
+    </button>
+    @if (addDisabled()) {
+      @if (product().inStock === false) {
+        <span [id]="addReasonId()" class="visually-hidden" i18n="@@productDetailContent.addDisabledReasonOutOfStock"
+          >Agotado. No disponible para pedido por ahora.</span
+        >
+      } @else {
+        <span [id]="addReasonId()" class="visually-hidden" i18n="@@productDetailContent.addDisabledReasonCapReached"
+          >Límite de selección alcanzado.</span
+        >
+      }
+    }
 
     @if (product().description) {
       <div class="product-detail-content__description" [innerHTML]="product().description"></div>

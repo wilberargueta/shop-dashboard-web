@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/angular';
+import { render, screen, fireEvent } from '@testing-library/angular';
 import { ProductDetail } from '../../../api/model/product-detail';
 import { ProductDetailContent } from './product-detail-content';
 
@@ -74,5 +74,92 @@ describe('ProductDetailContent', () => {
     const { container } = await render(ProductDetailContent, { inputs: { product: buildProduct({ images: [] }) } });
 
     expect(container.querySelector('img')?.getAttribute('src')).toBe('/images/product-placeholder.svg');
+  });
+
+  it('W9: emits addToSelection with the product and the chosen quantity', async () => {
+    const onAdd = vi.fn();
+    await render(ProductDetailContent, {
+      inputs: { product: buildProduct() },
+      on: { addToSelection: onAdd },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar cantidad' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir a la selección' }));
+
+    expect(onAdd).toHaveBeenCalledWith({ product: buildProduct(), quantity: 2 });
+  });
+
+  it('W9: shows "Quitar de la selección" and emits removeFromSelection with the productId when already selected', async () => {
+    const onRemove = vi.fn();
+    await render(ProductDetailContent, {
+      inputs: { product: buildProduct(), selected: true },
+      on: { removeFromSelection: onRemove },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar de la selección' }));
+
+    expect(onRemove).toHaveBeenCalledWith('p1');
+  });
+
+  it('W9: the add button is aria-disabled with an accessible reason when out of stock', async () => {
+    const onAdd = vi.fn();
+    const { container } = await render(ProductDetailContent, {
+      inputs: { product: buildProduct({ inStock: false }) },
+      on: { addToSelection: onAdd },
+    });
+
+    const button = screen.getByRole('button', { name: 'Añadir a la selección' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    const describedById = button.getAttribute('aria-describedby');
+    expect(container.querySelector(`#${describedById}`)?.textContent).toContain('Agotado');
+
+    fireEvent.click(button);
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('W9: the add button is aria-disabled with a different reason when the selection cap is reached', async () => {
+    const { container } = await render(ProductDetailContent, {
+      inputs: { product: buildProduct(), selectionDisabled: true },
+    });
+
+    const button = screen.getByRole('button', { name: 'Añadir a la selección' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    const describedById = button.getAttribute('aria-describedby');
+    expect(container.querySelector(`#${describedById}`)?.textContent).toContain('Límite de selección alcanzado');
+  });
+
+  it('W9: an already-selected product stays operable even when the cap is reached', async () => {
+    const onRemove = vi.fn();
+    await render(ProductDetailContent, {
+      inputs: { product: buildProduct(), selected: true, selectionDisabled: true },
+      on: { removeFromSelection: onRemove },
+    });
+
+    const button = screen.getByRole('button', { name: 'Quitar de la selección' });
+    expect(button.getAttribute('aria-disabled')).toBeNull();
+
+    fireEvent.click(button);
+    expect(onRemove).toHaveBeenCalledWith('p1');
+  });
+
+  it('W9: the quantity resets to 1 after adding and when navigating to a different product', async () => {
+    const onAdd = vi.fn();
+    const { rerender, fixture } = await render(ProductDetailContent, {
+      inputs: { product: buildProduct() },
+      on: { addToSelection: onAdd },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar cantidad' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir a la selección' }));
+    expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar cantidad' }));
+    await rerender({ inputs: { product: buildProduct({ id: 'p2', slug: 'otro-producto' }) } });
+    // El reinicio al cambiar de producto ocurre en un `effect()`, que no
+    // flushea de forma síncrona con el cambio del input: hay que esperar a
+    // que la app se estabilice antes de leer el valor.
+    await fixture.whenStable();
+
+    expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('1');
   });
 });

@@ -1,0 +1,62 @@
+<div class="selection-panel__backdrop" aria-hidden="true" (click)="onClose()"></div>
+<div
+  class="selection-panel__panel"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId"
+  appFocusTrap
+  [returnFocusTo]="returnFocusTo()"
+  (keydown.escape)="onClose()"
+>
+  <div class="selection-panel__header">
+    <h2 [id]="titleId" i18n="@@selectionPanel.title">Tu selección</h2>
+    <button type="button" class="selection-panel__close" (click)="onClose()">
+      <span class="visually-hidden" i18n="@@selectionPanel.close">Cerrar</span>
+      <span aria-hidden="true">×</span>
+    </button>
+  </div>
+
+  <ul class="selection-panel__list" role="list">
+    @for (line of lines(); track line.productId) {
+      <li class="selection-panel__item">
+        <span class="selection-panel__name">{{ line.name }}</span>
+
+        <app-product-price
+          [price]="line.price"
+          [effectivePrice]="line.effectivePrice"
+          [currency]="line.currency"
+          [onSale]="line.onSale"
+          [discountPercentage]="line.discountPercentage"
+        />
+
+        <app-quantity-stepper
+          [quantity]="line.quantity"
+          [min]="1"
+          (quantityChange)="quantityChange.emit({ productId: line.productId, quantity: $event })"
+        />
+
+        <button
+          type="button"
+          class="selection-panel__remove"
+          [attr.aria-labelledby]="removeLabelId(line.productId)"
+          (click)="remove.emit(line.productId)"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <span [id]="removeLabelId(line.productId)" class="visually-hidden" i18n="@@selectionPanel.removeLine"
+          >Quitar {{ line.name }} de la selección</span
+        >
+      </li>
+    }
+  </ul>
+
+  <div class="selection-panel__footer">
+    <p class="selection-panel__total">
+      <span i18n="@@selectionPanel.totalLabel">Total</span>:
+      <span>{{ subtotal() | currency: currency() }}</span>
+    </p>
+    <button type="button" class="selection-panel__send" (click)="sendRequested.emit()">
+      <span i18n="@@selectionPanel.send">Enviar por WhatsApp</span>
+    </button>
+  </div>
+</div>

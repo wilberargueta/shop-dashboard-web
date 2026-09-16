@@ -7,6 +7,7 @@ import { fireEvent } from '@testing-library/angular';
 import { Subject, of, throwError } from 'rxjs';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { PageResponseProductCard } from '../../../api/model/page-response-product-card';
+import { MAX_SELECTION } from '../../../core/config/max-selection.token';
 import { CatalogPage } from './catalog-page';
 
 const TEST_ROUTES: Routes = [{ path: '**', component: CatalogPage }];
@@ -64,6 +65,7 @@ describe('CatalogPage', () => {
   let getProduct: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    sessionStorage.clear();
     listProducts = vi.fn();
     listCategories = vi.fn().mockReturnValue(of([]));
     // Resuelto por defecto con un producto mínimo: estos tests comprueban el
@@ -82,6 +84,7 @@ describe('CatalogPage', () => {
         provideRouter(TEST_ROUTES),
         provideLocationMocks(),
         { provide: PublicCatalogControllerService, useValue: { listProducts, listCategories, getProduct } },
+        { provide: MAX_SELECTION, useValue: 20 },
       ],
     });
   });
@@ -373,6 +376,22 @@ describe('CatalogPage', () => {
 
       expect(harness.routeNativeElement?.querySelector('[role="dialog"]')).toBeNull();
       expect(location.path()).toBe('/');
+    });
+  });
+
+  describe('selección múltiple (W9)', () => {
+    it('toggling a card checkbox calls SelectionService.toggle and reflects back as checked', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 2, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      const checkbox = harness.routeNativeElement?.querySelectorAll('[role="checkbox"]')[0] as HTMLButtonElement;
+      expect(checkbox.getAttribute('aria-checked')).toBe('false');
+
+      fireEvent.click(checkbox);
+      await harness.fixture.whenStable();
+
+      expect(checkbox.getAttribute('aria-checked')).toBe('true');
     });
   });
 });

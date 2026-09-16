@@ -5,7 +5,16 @@
     }
   } @else {
     @for (product of products(); track product.id; let i = $index) {
-      <li><app-product-card [product]="product" [priority]="i < priorityCount" (open)="productOpen.emit($event)" /></li>
+      <li>
+        <app-product-card
+          [product]="product"
+          [priority]="i < priorityCount"
+          [selected]="selectedProductIds().has(product.id ?? '')"
+          [selectionDisabled]="selectionCapReached() && !selectedProductIds().has(product.id ?? '')"
+          (open)="productOpen.emit($event)"
+          (selectionToggle)="selectionToggle.emit($event)"
+        />
+      </li>
     }
     @if (loadingMore()) {
       @for (index of trailingSkeletonIndexes(); track index) {

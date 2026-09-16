@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/angular';
 import { Subject, of, throwError } from 'rxjs';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { ProductDetail } from '../../../api/model/product-detail';
+import { MAX_SELECTION } from '../../../core/config/max-selection.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
 import { ProductDetailModal } from './product-detail-modal';
 
@@ -27,13 +28,17 @@ describe('ProductDetailModal', () => {
   let getProduct: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    sessionStorage.clear();
     getProduct = vi.fn();
   });
 
   function renderModal(inputs: Partial<{ slug: string; returnFocusTo: HTMLElement | null }> = {}) {
     return render(ProductDetailModal, {
       inputs: { slug: 'aceite-esencial-de-lavanda-30ml', returnFocusTo: null, ...inputs },
-      providers: [{ provide: PublicCatalogControllerService, useValue: { getProduct } }],
+      providers: [
+        { provide: PublicCatalogControllerService, useValue: { getProduct } },
+        { provide: MAX_SELECTION, useValue: 20 },
+      ],
     });
   }
 
@@ -75,7 +80,10 @@ describe('ProductDetailModal', () => {
 
     await render(ProductDetailModal, {
       inputs: { slug: 'aceite-esencial-de-lavanda-30ml', returnFocusTo: null },
-      providers: [{ provide: PublicCatalogControllerService, useValue: { getProduct } }],
+      providers: [
+        { provide: PublicCatalogControllerService, useValue: { getProduct } },
+        { provide: MAX_SELECTION, useValue: 20 },
+      ],
       on: { closed: onClosed },
     });
 
@@ -92,7 +100,10 @@ describe('ProductDetailModal', () => {
 
     const { container } = await render(ProductDetailModal, {
       inputs: { slug: 'aceite-esencial-de-lavanda-30ml', returnFocusTo: null },
-      providers: [{ provide: PublicCatalogControllerService, useValue: { getProduct } }],
+      providers: [
+        { provide: PublicCatalogControllerService, useValue: { getProduct } },
+        { provide: MAX_SELECTION, useValue: 20 },
+      ],
       on: { closed: onClosed },
     });
 
@@ -125,5 +136,17 @@ describe('ProductDetailModal', () => {
 
     expect(document.activeElement).toBe(origin);
     origin.remove();
+  });
+
+  it('W9: adding to the selection here flips the button to "Quitar de la selección"', async () => {
+    getProduct.mockReturnValue(of(buildProduct()));
+
+    const { fixture } = await renderModal();
+
+    const addButton = screen.getByRole('button', { name: 'Añadir a la selección' });
+    fireEvent.click(addButton);
+    fixture.detectChanges();
+
+    expect(screen.getByRole('button', { name: 'Quitar de la selección' })).toBeTruthy();
   });
 });

@@ -3,7 +3,8 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { FocusTrap } from '../../../shared/focus-trap/focus-trap';
 import { ProductDetailSkeleton } from '../../../shared/product-detail-skeleton/product-detail-skeleton';
-import { ProductDetailContent } from '../product-detail-content/product-detail-content';
+import { SelectionService } from '../../selection/selection.service';
+import { AddToSelectionEvent, ProductDetailContent } from '../product-detail-content/product-detail-content';
 
 /**
  * Modal de detalle sobre el grid (W7): mismo `ProductDetailContent` de W6,
@@ -28,6 +29,7 @@ export class ProductDetailModal {
   protected readonly titleId = 'product-detail-modal-title';
 
   private readonly publicCatalogController = inject(PublicCatalogControllerService);
+  protected readonly selection = inject(SelectionService);
 
   private readonly productResource = rxResource({
     params: this.slug,
@@ -40,8 +42,21 @@ export class ProductDetailModal {
   protected readonly product = computed(() =>
     this.productResource.status() === 'resolved' ? this.productResource.value() : undefined,
   );
+  protected readonly isSelected = computed(() => {
+    const productId = this.product()?.id;
+    return productId !== undefined && this.selection.isSelected(productId);
+  });
+  protected readonly selectionCapReached = this.selection.capReached;
 
   protected onClose(): void {
     this.closed.emit();
+  }
+
+  protected onAddToSelection(event: AddToSelectionEvent): void {
+    this.selection.add(event.product, event.quantity);
+  }
+
+  protected onRemoveFromSelection(productId: string): void {
+    this.selection.remove(productId);
   }
 }

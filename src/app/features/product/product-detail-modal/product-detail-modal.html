@@ -14,7 +14,14 @@
   </button>
 
   @if (product(); as product) {
-    <app-product-detail-content [product]="product" [titleId]="titleId" />
+    <app-product-detail-content
+      [product]="product"
+      [titleId]="titleId"
+      [selected]="isSelected()"
+      [selectionDisabled]="selectionCapReached()"
+      (addToSelection)="onAddToSelection($event)"
+      (removeFromSelection)="onRemoveFromSelection($event)"
+    />
   } @else if (hasError()) {
     <p class="product-detail-modal__error" i18n="@@productDetailModal.loadError">
       No se pudo cargar el producto. Inténtalo de nuevo más tarde.

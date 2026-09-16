@@ -16,8 +16,12 @@ export interface ProductCardOpenEvent {
 export class ProductCard {
   readonly product = input.required<ProductCardDto>();
   readonly priority = input(false);
+  readonly selected = input(false);
+  /** Tope de selección alcanzado y esta tarjeta todavía no está seleccionada (W9). */
+  readonly selectionDisabled = input(false);
 
   readonly open = output<ProductCardOpenEvent>();
+  readonly selectionToggle = output<ProductCardDto>();
 
   protected readonly cardImage = computed(() => this.product().primaryImage?.card ?? null);
   protected readonly detailHref = computed(() => `/p/${this.product().slug ?? ''}`);
@@ -55,4 +59,13 @@ export class ProductCard {
   });
 
   protected readonly outOfStockReasonId = computed(() => `product-card-oos-${this.product().id}`);
+  protected readonly selectionCapReasonId = computed(() => `product-card-cap-${this.product().id}`);
+
+  /** Mismo criterio que el botón "Agotado": `aria-disabled`, nunca `disabled`, y el manejador retorna temprano. */
+  protected onSelectionToggle(): void {
+    if (this.selectionDisabled() && !this.selected()) {
+      return;
+    }
+    this.selectionToggle.emit(this.product());
+  }
 }

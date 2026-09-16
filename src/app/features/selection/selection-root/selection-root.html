@@ -1,0 +1,35 @@
+<p class="visually-hidden" aria-live="polite">
+  @if (selection.count() === 1) {
+    <ng-container i18n="@@selectionRoot.announcementSingular"
+      >1 producto seleccionado, total {{ selection.subtotal() | currency: selection.currency() }}</ng-container
+    >
+  } @else if (selection.count() > 1) {
+    <ng-container i18n="@@selectionRoot.announcementPlural"
+      >{{ selection.count() }} productos seleccionados, total
+      {{ selection.subtotal() | currency: selection.currency() }}</ng-container
+    >
+  }
+</p>
+
+@if (selection.count() > 0) {
+  <app-selection-bar
+    [count]="selection.count()"
+    [subtotal]="selection.subtotal()"
+    [currency]="selection.currency()"
+    (viewRequested)="onViewRequested()"
+    (sendRequested)="onSendRequested()"
+  />
+}
+
+@if (selection.panelOpen()) {
+  <app-selection-panel
+    [lines]="selection.lines()"
+    [subtotal]="selection.subtotal()"
+    [currency]="selection.currency()"
+    [returnFocusTo]="selection.panelReturnFocusTo()"
+    (quantityChange)="selection.setQuantity($event.productId, $event.quantity)"
+    (remove)="selection.remove($event)"
+    (closed)="selection.closePanel()"
+    (sendRequested)="onSendRequested()"
+  />
+}

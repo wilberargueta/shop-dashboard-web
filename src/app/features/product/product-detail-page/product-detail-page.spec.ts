@@ -3,9 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Routes, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { fireEvent } from '@testing-library/angular';
 import { Subject, of, throwError } from 'rxjs';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { ProductDetail } from '../../../api/model/product-detail';
+import { MAX_SELECTION } from '../../../core/config/max-selection.token';
 import { SITE_URL } from '../../../core/config/site-url.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
 import { ProductDetailPage } from './product-detail-page';
@@ -41,6 +43,7 @@ describe('ProductDetailPage', () => {
   let responseInit: { status?: number };
 
   beforeEach(() => {
+    sessionStorage.clear();
     getProduct = vi.fn();
     responseInit = {};
 
@@ -51,6 +54,7 @@ describe('ProductDetailPage', () => {
         { provide: PublicCatalogControllerService, useValue: { getProduct } },
         { provide: RESPONSE_INIT, useValue: responseInit },
         { provide: SITE_URL, useValue: 'https://tienda.test' },
+        { provide: MAX_SELECTION, useValue: 20 },
       ],
     });
   });
@@ -108,5 +112,21 @@ describe('ProductDetailPage', () => {
 
     expect(harness.routeNativeElement?.textContent).toContain('No se pudo cargar el producto');
     expect(responseInit.status).toBeUndefined();
+  });
+
+  it('W9: adding to the selection here flips the button to "Quitar de la selección"', async () => {
+    getProduct.mockReturnValue(of(buildProduct()));
+
+    const harness = await RouterTestingHarness.create('/p/aceite-esencial-de-lavanda-30ml');
+
+    const addButton = harness.routeNativeElement?.querySelector(
+      '.product-detail-content__add-button',
+    ) as HTMLButtonElement;
+    expect(addButton.textContent).toContain('Añadir a la selección');
+
+    fireEvent.click(addButton);
+    await harness.fixture.whenStable();
+
+    expect(addButton.textContent).toContain('Quitar de la selección');
   });
 });
