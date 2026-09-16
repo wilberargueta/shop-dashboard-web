@@ -65,10 +65,31 @@ describe('ProductCard', () => {
     expect(reason?.textContent).toContain('Agotado');
   });
 
-  it('does not render a WhatsApp button when the product is in stock', async () => {
-    await render(ProductCard, { inputs: { product: buildProduct() } });
+  it('renders an enabled WhatsApp button when the product is in stock, emitting whatsappRequested with the product', async () => {
+    const onWhatsappRequested = vi.fn();
+    await render(ProductCard, {
+      inputs: { product: buildProduct() },
+      on: { whatsappRequested: onWhatsappRequested },
+    });
 
-    expect(screen.queryByRole('button', { name: /whatsapp/i })).toBeNull();
+    const button = screen.getByRole('button', { name: 'Consultar por WhatsApp' });
+    expect(button.getAttribute('aria-disabled')).toBeNull();
+
+    fireEvent.click(button);
+
+    expect(onWhatsappRequested).toHaveBeenCalledWith(buildProduct());
+  });
+
+  it('does not emit whatsappRequested when clicked while out of stock', async () => {
+    const onWhatsappRequested = vi.fn();
+    await render(ProductCard, {
+      inputs: { product: buildProduct({ inStock: false }) },
+      on: { whatsappRequested: onWhatsappRequested },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar por WhatsApp' }));
+
+    expect(onWhatsappRequested).not.toHaveBeenCalled();
   });
 
   it('falls back to the local placeholder when the product has no image', async () => {

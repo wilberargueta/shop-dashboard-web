@@ -69,11 +69,17 @@
 
   @if (product().inStock === false) {
     <p class="product-card__badge product-card__badge--out-of-stock" i18n="@@productCard.outOfStock">Agotado</p>
-    <button type="button" class="product-card__whatsapp-button" aria-disabled="true"
-      [attr.aria-describedby]="outOfStockReasonId()"
-    >
-      <span i18n="@@productCard.whatsappButton">Consultar por WhatsApp</span>
-    </button>
+  }
+  <button
+    type="button"
+    class="product-card__whatsapp-button"
+    [attr.aria-disabled]="product().inStock === false ? 'true' : null"
+    [attr.aria-describedby]="product().inStock === false ? outOfStockReasonId() : null"
+    (click)="onWhatsappClick()"
+  >
+    <span i18n="@@productCard.whatsappButton">Consultar por WhatsApp</span>
+  </button>
+  @if (product().inStock === false) {
     <span [id]="outOfStockReasonId()" class="visually-hidden" i18n="@@productCard.outOfStockReason"
       >Agotado. No disponible para pedido por ahora.</span
     >

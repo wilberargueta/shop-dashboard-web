@@ -4,7 +4,13 @@ import { PublicCatalogControllerService } from '../../../api/api/public-catalog-
 import { FocusTrap } from '../../../shared/focus-trap/focus-trap';
 import { ProductDetailSkeleton } from '../../../shared/product-detail-skeleton/product-detail-skeleton';
 import { SelectionService } from '../../selection/selection.service';
-import { AddToSelectionEvent, ProductDetailContent } from '../product-detail-content/product-detail-content';
+import { toSelectionLine } from '../../selection/selection.model';
+import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
+import {
+  AddToSelectionEvent,
+  ProductDetailContent,
+  WhatsAppRequestedEvent,
+} from '../product-detail-content/product-detail-content';
 
 /**
  * Modal de detalle sobre el grid (W7): mismo `ProductDetailContent` de W6,
@@ -30,6 +36,7 @@ export class ProductDetailModal {
 
   private readonly publicCatalogController = inject(PublicCatalogControllerService);
   protected readonly selection = inject(SelectionService);
+  private readonly whatsappPreview = inject(WhatsAppPreviewService);
 
   private readonly productResource = rxResource({
     params: this.slug,
@@ -58,5 +65,13 @@ export class ProductDetailModal {
 
   protected onRemoveFromSelection(productId: string): void {
     this.selection.remove(productId);
+  }
+
+  protected onWhatsappRequested({ product, quantity }: WhatsAppRequestedEvent): void {
+    const line = toSelectionLine(product, quantity);
+    if (!line) {
+      return;
+    }
+    this.whatsappPreview.openWith([line], document.activeElement as HTMLElement | null);
   }
 }

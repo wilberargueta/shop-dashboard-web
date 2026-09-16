@@ -22,6 +22,7 @@ export class ProductCard {
 
   readonly open = output<ProductCardOpenEvent>();
   readonly selectionToggle = output<ProductCardDto>();
+  readonly whatsappRequested = output<ProductCardDto>();
 
   protected readonly cardImage = computed(() => this.product().primaryImage?.card ?? null);
   protected readonly detailHref = computed(() => `/p/${this.product().slug ?? ''}`);
@@ -67,5 +68,13 @@ export class ProductCard {
       return;
     }
     this.selectionToggle.emit(this.product());
+  }
+
+  /** Igual criterio de accesibilidad: `aria-disabled` cuando está agotado, el manejador retorna temprano. */
+  protected onWhatsappClick(): void {
+    if (this.product().inStock === false) {
+      return;
+    }
+    this.whatsappRequested.emit(this.product());
   }
 }

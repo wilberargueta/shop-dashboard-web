@@ -3,33 +3,9 @@ import { DestroyRef, Injectable, PLATFORM_ID, computed, effect, inject, signal, 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { PublicCatalogControllerService } from '../../api/api/public-catalog-controller.service';
-import { ProductCard as ProductCardDto } from '../../api/model/product-card';
-import { ProductDetail } from '../../api/model/product-detail';
 import { MAX_SELECTION } from '../../core/config/max-selection.token';
 import { readStoredSelection, writeStoredSelection } from './selection-storage';
-import { SelectionLine } from './selection.model';
-
-type SelectableProduct = ProductCardDto | ProductDetail;
-
-function toSelectionLine(product: SelectableProduct, quantity: number): SelectionLine | null {
-  if (!product.id || !product.slug) {
-    return null;
-  }
-  return {
-    productId: product.id,
-    slug: product.slug,
-    quantity,
-    name: product.name ?? '',
-    sku: product.sku ?? '',
-    price: product.price ?? 0,
-    effectivePrice: product.effectivePrice ?? product.price ?? 0,
-    currency: product.currency ?? 'USD',
-    onSale: product.onSale ?? false,
-    discountPercentage: product.discountPercentage,
-    inStock: product.inStock ?? true,
-    primaryImage: product.primaryImage,
-  };
-}
+import { SelectableProduct, SelectionLine, toSelectionLine } from './selection.model';
 
 /**
  * Selección múltiple del visitante (PROJECT_SPEC.md §7). Persistida en

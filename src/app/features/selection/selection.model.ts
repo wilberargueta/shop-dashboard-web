@@ -1,4 +1,6 @@
 import { ImageRef } from '../../api/model/image-ref';
+import { ProductCard as ProductCardDto } from '../../api/model/product-card';
+import { ProductDetail } from '../../api/model/product-detail';
 
 /**
  * Forma persistida en `sessionStorage` — literalmente `{ productId, cantidad }`
@@ -32,4 +34,32 @@ export interface SelectionLine {
   discountPercentage?: number;
   inStock: boolean;
   primaryImage?: ImageRef;
+}
+
+export type SelectableProduct = ProductCardDto | ProductDetail;
+
+/**
+ * Mapeo compartido `ProductCard|ProductDetail → SelectionLine`, usado por
+ * `SelectionService` (W9) y por el flujo de WhatsApp individual desde la
+ * tarjeta/el detalle (W10) — una línea sin `id`/`slug` no se puede enviar ni
+ * seleccionar, así que ambos casos comparten la misma validación.
+ */
+export function toSelectionLine(product: SelectableProduct, quantity: number): SelectionLine | null {
+  if (!product.id || !product.slug) {
+    return null;
+  }
+  return {
+    productId: product.id,
+    slug: product.slug,
+    quantity,
+    name: product.name ?? '',
+    sku: product.sku ?? '',
+    price: product.price ?? 0,
+    effectivePrice: product.effectivePrice ?? product.price ?? 0,
+    currency: product.currency ?? 'USD',
+    onSale: product.onSale ?? false,
+    discountPercentage: product.discountPercentage,
+    inStock: product.inStock ?? true,
+    primaryImage: product.primaryImage,
+  };
 }

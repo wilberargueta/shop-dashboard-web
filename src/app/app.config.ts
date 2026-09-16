@@ -6,6 +6,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { API_BASE_URL } from './core/config/api-base-url.token';
 import { MAX_SELECTION } from './core/config/max-selection.token';
 import { SITE_URL } from './core/config/site-url.token';
+import { WHATSAPP_SETTINGS, WhatsAppSettings } from './core/config/whatsapp-settings.token';
 import { Configuration } from './api/configuration';
 import { ApiConfiguration } from './core/http/api-configuration';
 import { traceIdInterceptor } from './core/http/trace-id.interceptor';
@@ -23,6 +24,30 @@ const siteUrl = 'http://localhost:4200';
 // desviación de W1/W8). Valor fijo por ahora, igual en servidor y navegador.
 const maxSelection = 20;
 
+// `whatsapp.phone_number`/`whatsapp.template_*`/`store.name` (ARQUITECTURA.md
+// §4.6): ver whatsapp-settings.token.ts. Plantillas por defecto de
+// ARQUITECTURA.md §6 "Valores por defecto que van en la migración inicial".
+const whatsappSettings: WhatsAppSettings = {
+  phoneNumber: '50370000000',
+  storeName: 'Mi Tienda',
+  templates: {
+    single: `¡Hola! Me interesa este producto de {{tienda}}:
+
+*{{producto}}*
+SKU: {{sku}}
+Precio: {{precio}}
+Cantidad: {{cantidad}}
+Total: {{subtotal}}
+
+{{url}}`,
+    multiHeader: '¡Hola! Me interesan estos productos de {{tienda}}:',
+    multiItem: `• *{{producto}}* (x{{cantidad}}) — {{subtotal}}
+  {{url}}`,
+    multiFooter: `
+*Total: {{total}}* ({{unidades}} unidades)`,
+  },
+};
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -32,6 +57,7 @@ export const appConfig: ApplicationConfig = {
     { provide: API_BASE_URL, useValue: apiBaseUrl },
     { provide: SITE_URL, useValue: siteUrl },
     { provide: MAX_SELECTION, useValue: maxSelection },
+    { provide: WHATSAPP_SETTINGS, useValue: whatsappSettings },
     { provide: Configuration, useValue: new ApiConfiguration({ basePath: apiBaseUrl }) },
   ],
 };

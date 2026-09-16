@@ -70,6 +70,21 @@
       }
     }
 
+    <button
+      type="button"
+      class="product-detail-content__whatsapp-button"
+      [attr.aria-disabled]="whatsappDisabled() ? 'true' : null"
+      [attr.aria-describedby]="whatsappDisabled() ? whatsappReasonId() : null"
+      (click)="onWhatsappClick()"
+    >
+      <span i18n="@@productDetailContent.whatsappButton">Consultar por WhatsApp</span>
+    </button>
+    @if (whatsappDisabled()) {
+      <span [id]="whatsappReasonId()" class="visually-hidden" i18n="@@productDetailContent.whatsappDisabledReason"
+        >Agotado. No disponible para pedido por ahora.</span
+      >
+    }
+
     @if (product().description) {
       <div class="product-detail-content__description" [innerHTML]="product().description"></div>
     }

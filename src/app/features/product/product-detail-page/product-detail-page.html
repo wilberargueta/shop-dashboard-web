@@ -6,6 +6,7 @@
       [selectionDisabled]="selectionCapReached()"
       (addToSelection)="onAddToSelection($event)"
       (removeFromSelection)="onRemoveFromSelection($event)"
+      (whatsappRequested)="onWhatsappRequested($event)"
     />
   } @else if (notFound()) {
     <div class="product-detail-page__not-found">

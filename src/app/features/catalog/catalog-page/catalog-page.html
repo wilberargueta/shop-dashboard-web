@@ -37,6 +37,7 @@
           [selectionCapReached]="selectionCapReached()"
           (productOpen)="onProductOpen($event)"
           (selectionToggle)="onSelectionToggle($event)"
+          (whatsappRequested)="onWhatsappRequested($event)"
         />
         <app-catalog-load-more
           [hasNext]="hasNext()"

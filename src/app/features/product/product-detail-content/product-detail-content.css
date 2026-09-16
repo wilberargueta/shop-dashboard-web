@@ -71,6 +71,22 @@
   cursor: not-allowed;
 }
 
+.product-detail-content__whatsapp-button {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.product-detail-content__whatsapp-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (min-width: 1024px) {
   .product-detail-content {
     flex-direction: row;

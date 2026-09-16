@@ -8,6 +8,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
 import { PageResponseProductCard } from '../../../api/model/page-response-product-card';
 import { MAX_SELECTION } from '../../../core/config/max-selection.token';
+import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
 import { CatalogPage } from './catalog-page';
 
 const TEST_ROUTES: Routes = [{ path: '**', component: CatalogPage }];
@@ -392,6 +393,22 @@ describe('CatalogPage', () => {
       await harness.fixture.whenStable();
 
       expect(checkbox.getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('WhatsApp individual (W10)', () => {
+    it('clicking a card\'s WhatsApp button opens the preview with a single, quantity-1 line', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 2, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+      const whatsappPreview = TestBed.inject(WhatsAppPreviewService);
+
+      const button = harness.routeNativeElement?.querySelector('.product-card__whatsapp-button') as HTMLButtonElement;
+      fireEvent.click(button);
+      await harness.fixture.whenStable();
+
+      expect(whatsappPreview.open()).toBe(true);
+      expect(whatsappPreview.lines()).toEqual([expect.objectContaining({ slug: 'p0-0', quantity: 1 })]);
     });
   });
 });

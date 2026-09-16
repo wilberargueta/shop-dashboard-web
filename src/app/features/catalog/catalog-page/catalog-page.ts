@@ -18,6 +18,8 @@ import {
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
 import { ProductDetailModal } from '../../product/product-detail-modal/product-detail-modal';
 import { SelectionService } from '../../selection/selection.service';
+import { toSelectionLine } from '../../selection/selection.model';
+import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
 import { CatalogFilterMobilePanel } from '../catalog-filter-mobile-panel/catalog-filter-mobile-panel';
 import { CatalogFilterPanel } from '../catalog-filter-panel/catalog-filter-panel';
 import { CatalogLoadMore } from '../catalog-load-more/catalog-load-more';
@@ -52,6 +54,7 @@ export class CatalogPage {
   private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly selection = inject(SelectionService);
+  private readonly whatsappPreview = inject(WhatsAppPreviewService);
 
   protected readonly openSlug = signal<string | null>(null);
   protected readonly modalOrigin = signal<HTMLElement | null>(null);
@@ -248,6 +251,15 @@ export class CatalogPage {
 
   protected onSelectionToggle(product: ProductCardDto): void {
     this.selection.toggle(product);
+  }
+
+  /** La tarjeta no tiene selector de cantidad (PROJECT_SPEC.md §5): siempre 1. */
+  protected onWhatsappRequested(product: ProductCardDto): void {
+    const line = toSelectionLine(product, 1);
+    if (!line) {
+      return;
+    }
+    this.whatsappPreview.openWith([line], document.activeElement as HTMLElement | null);
   }
 
   /** Cierre explícito (X, fondo, Escape): saca del historial la entrada que empujó `onProductOpen`. */

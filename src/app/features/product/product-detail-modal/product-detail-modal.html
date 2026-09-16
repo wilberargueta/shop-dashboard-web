@@ -21,6 +21,7 @@
       [selectionDisabled]="selectionCapReached()"
       (addToSelection)="onAddToSelection($event)"
       (removeFromSelection)="onRemoveFromSelection($event)"
+      (whatsappRequested)="onWhatsappRequested($event)"
     />
   } @else if (hasError()) {
     <p class="product-detail-modal__error" i18n="@@productDetailModal.loadError">

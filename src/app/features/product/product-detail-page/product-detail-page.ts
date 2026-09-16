@@ -8,7 +8,13 @@ import { SITE_URL } from '../../../core/config/site-url.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
 import { ProductDetailSkeleton } from '../../../shared/product-detail-skeleton/product-detail-skeleton';
 import { SelectionService } from '../../selection/selection.service';
-import { AddToSelectionEvent, ProductDetailContent } from '../product-detail-content/product-detail-content';
+import { toSelectionLine } from '../../selection/selection.model';
+import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
+import {
+  AddToSelectionEvent,
+  ProductDetailContent,
+  WhatsAppRequestedEvent,
+} from '../product-detail-content/product-detail-content';
 
 /**
  * `resource()`/`rxResource()` envuelve cualquier error que no "parezca" un
@@ -51,6 +57,7 @@ export class ProductDetailPage {
   private readonly title = inject(Title);
   private readonly siteUrl = inject(SITE_URL);
   protected readonly selection = inject(SelectionService);
+  private readonly whatsappPreview = inject(WhatsAppPreviewService);
 
   private readonly productResource = rxResource({
     params: this.slug,
@@ -98,6 +105,14 @@ export class ProductDetailPage {
 
   protected onRemoveFromSelection(productId: string): void {
     this.selection.remove(productId);
+  }
+
+  protected onWhatsappRequested({ product, quantity }: WhatsAppRequestedEvent): void {
+    const line = toSelectionLine(product, quantity);
+    if (!line) {
+      return;
+    }
+    this.whatsappPreview.openWith([line], document.activeElement as HTMLElement | null);
   }
 
   private updateMetaTags(product: ProductDetail): void {

@@ -9,6 +9,11 @@ export interface AddToSelectionEvent {
   quantity: number;
 }
 
+export interface WhatsAppRequestedEvent {
+  product: ProductDetail;
+  quantity: number;
+}
+
 /**
  * Ancla responsive del ROADMAP (W6): todo el contenido del detalle vive
  * aquí, sin saber nada de su contenedor. W7 lo usa dentro de un modal; W13
@@ -32,6 +37,7 @@ export class ProductDetailContent {
 
   readonly addToSelection = output<AddToSelectionEvent>();
   readonly removeFromSelection = output<string>();
+  readonly whatsappRequested = output<WhatsAppRequestedEvent>();
 
   protected readonly images = computed(() => this.product().images ?? []);
 
@@ -41,6 +47,10 @@ export class ProductDetailContent {
     () => this.product().inStock === false || (this.selectionDisabled() && !this.selected()),
   );
   protected readonly addReasonId = computed(() => `product-detail-content-add-reason-${this.product().id}`);
+
+  /** El envío individual por WhatsApp no cuenta contra `catalog.max_selection`: solo se deshabilita si está agotado. */
+  protected readonly whatsappDisabled = computed(() => this.product().inStock === false);
+  protected readonly whatsappReasonId = computed(() => `product-detail-content-whatsapp-reason-${this.product().id}`);
 
   constructor() {
     // Reinicia la cantidad al navegar a otro producto (el modal reutiliza la
@@ -64,5 +74,12 @@ export class ProductDetailContent {
     }
     this.addToSelection.emit({ product: this.product(), quantity: this.addQuantity() });
     this.addQuantity.set(1);
+  }
+
+  protected onWhatsappClick(): void {
+    if (this.whatsappDisabled()) {
+      return;
+    }
+    this.whatsappRequested.emit({ product: this.product(), quantity: this.addQuantity() });
   }
 }

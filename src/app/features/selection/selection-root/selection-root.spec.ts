@@ -4,6 +4,7 @@ import { PublicCatalogControllerService } from '../../../api/api/public-catalog-
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
 import { MAX_SELECTION } from '../../../core/config/max-selection.token';
 import { SelectionService } from '../selection.service';
+import { WhatsAppPreviewService } from '../whatsapp-preview/whatsapp-preview.service';
 import { SelectionRoot } from './selection-root';
 
 function buildProduct(overrides: Partial<ProductCardDto> = {}): ProductCardDto {
@@ -59,7 +60,7 @@ describe('SelectionRoot', () => {
     expect(screen.getByRole('region', { name: 'Selección de productos' })).toBeTruthy();
   });
 
-  it('"Ver" opens the panel; "Enviar por WhatsApp" opens it too (comportamiento interino hasta W10)', async () => {
+  it('"Ver" opens the selection panel', async () => {
     const { fixture } = await setup();
     const selection = TestBed.inject(SelectionService);
     selection.add(buildProduct());
@@ -72,10 +73,38 @@ describe('SelectionRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
     fixture.detectChanges();
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('W10: "Enviar por WhatsApp" opens the WhatsApp preview with the full selection, not the panel', async () => {
+    const { fixture } = await setup();
+    const selection = TestBed.inject(SelectionService);
+    const whatsappPreview = TestBed.inject(WhatsAppPreviewService);
+    selection.add(buildProduct());
+    fixture.detectChanges();
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
     fixture.detectChanges();
-    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(whatsappPreview.open()).toBe(true);
+    expect(whatsappPreview.lines()).toEqual(selection.lines());
+  });
+
+  it('W10: the selection panel\'s own "Enviar por WhatsApp" button also opens the preview', async () => {
+    const { container, fixture } = await setup();
+    const selection = TestBed.inject(SelectionService);
+    const whatsappPreview = TestBed.inject(WhatsAppPreviewService);
+    selection.add(buildProduct());
+    fixture.detectChanges();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver' }));
+    fixture.detectChanges();
+
+    const panelSendButton = container.querySelector('.selection-panel__send');
+    if (!panelSendButton) throw new Error('panel send button not found');
+    fireEvent.click(panelSendButton);
+    fixture.detectChanges();
+
+    expect(whatsappPreview.open()).toBe(true);
   });
 
   it('closes the panel automatically once the selection empties out', async () => {

@@ -13,6 +13,7 @@
           [selectionDisabled]="selectionCapReached() && !selectedProductIds().has(product.id ?? '')"
           (open)="productOpen.emit($event)"
           (selectionToggle)="selectionToggle.emit($event)"
+          (whatsappRequested)="whatsappRequested.emit($event)"
         />
       </li>
     }

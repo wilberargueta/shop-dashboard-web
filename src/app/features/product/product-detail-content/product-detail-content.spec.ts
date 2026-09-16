@@ -142,6 +142,43 @@ describe('ProductDetailContent', () => {
     expect(onRemove).toHaveBeenCalledWith('p1');
   });
 
+  it('W10: emits whatsappRequested with the product and the chosen quantity', async () => {
+    const onWhatsappRequested = vi.fn();
+    await render(ProductDetailContent, {
+      inputs: { product: buildProduct() },
+      on: { whatsappRequested: onWhatsappRequested },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar cantidad' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar por WhatsApp' }));
+
+    expect(onWhatsappRequested).toHaveBeenCalledWith({ product: buildProduct(), quantity: 2 });
+  });
+
+  it('W10: the WhatsApp button is aria-disabled with an accessible reason when out of stock, and does not emit', async () => {
+    const onWhatsappRequested = vi.fn();
+    const { container } = await render(ProductDetailContent, {
+      inputs: { product: buildProduct({ inStock: false }) },
+      on: { whatsappRequested: onWhatsappRequested },
+    });
+
+    const button = screen.getByRole('button', { name: 'Consultar por WhatsApp' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    const describedById = button.getAttribute('aria-describedby');
+    expect(container.querySelector(`#${describedById}`)?.textContent).toContain('Agotado');
+
+    fireEvent.click(button);
+    expect(onWhatsappRequested).not.toHaveBeenCalled();
+  });
+
+  it('W10: the WhatsApp button stays enabled even when the selection cap is reached', async () => {
+    await render(ProductDetailContent, {
+      inputs: { product: buildProduct(), selectionDisabled: true },
+    });
+
+    expect(screen.getByRole('button', { name: 'Consultar por WhatsApp' }).getAttribute('aria-disabled')).toBeNull();
+  });
+
   it('W9: the quantity resets to 1 after adding and when navigating to a different product', async () => {
     const onAdd = vi.fn();
     const { rerender, fixture } = await render(ProductDetailContent, {

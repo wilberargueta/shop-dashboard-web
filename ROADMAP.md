@@ -906,7 +906,7 @@ Funciona en servidor devolviendo selección vacía.
 
 ---
 
-### [ ] W10. Vista previa y redirección
+### [x] W10. Vista previa y redirección
 
 Diálogo de vista previa con el mensaje renderizado, botón "Enviar" y botón
 "Copiar". Envío del evento `WHATSAPP_CLICK` con `sendBeacon` o `keepalive`
@@ -921,6 +921,84 @@ Botón de WhatsApp individual en la tarjeta y en el modal.
 - Un fallo del evento de analítica **no** impide la redirección; test explícito.
 - "Copiar" copia el texto sin codificar.
 - El diálogo cumple las mismas reglas de accesibilidad del modal.
+
+**Desviaciones:**
+- **`WHATSAPP_SETTINGS` (`core/config/whatsapp-settings.token.ts`), mismo
+  patrón que `MAX_SELECTION`/`SITE_URL`, decisión tomada con el usuario**:
+  `WhatsAppTemplateService` (W8) recibe el número y las plantillas como
+  parámetros, sin depender de `PublicSettings`. Verificado contra el
+  `ROADMAP.md` real de `shop-backend-service`: `B11` (settings + plantillas)
+  ya está `[x]` — a diferencia de cuando se escribieron las notas de W1/W8/W9,
+  que sí estaba bloqueado — pero este repo no ha vuelto a correr
+  `pnpm api:generate` desde entonces, así que `PublicSettings` sigue sin
+  existir en `src/app/api/`. Desbloquear eso de verdad (regenerar el cliente
+  contra el backend real y construir un `SettingsService`) queda fuera de esta
+  tarea; se decidió con el usuario mantener W10 en su alcance literal con un
+  valor fijo (plantillas por defecto de `ARQUITECTURA.md` §6, número de
+  ejemplo). Cerrar esto de verdad es una tarea aparte, que además debería
+  reabrir las notas pendientes de W1 (`PublicSettings`), W8 (caso 12,
+  `whatsapp-golden.json`) y W9 (`MAX_SELECTION`).
+- **El evento `WHATSAPP_CLICK` se implementa contra un endpoint que el
+  backend todavía no expone**: `POST /api/public/v1/events` es `B14` en el
+  `ROADMAP.md` de `shop-backend-service`, y sigue `[ ]` (a diferencia de
+  `B11`). Se implementó igual (`AnalyticsEventService`,
+  `core/analytics/analytics-event.service.ts`) porque el criterio de
+  aceptación de esta tarea depende de que el fallo de ese envío no bloquee la
+  redirección, y esa garantía se puede y se debe probar ya (con
+  `HttpTestingController`/mocks de `sendBeacon`/`fetch`, mismo criterio que el
+  `429`/`Retry-After` de W1). Queda pendiente verificar el cuerpo real de la
+  petición y la respuesta `202` contra un backend con `B14` hecho.
+- **Sin cliente generado para `/events`, se usa `sendBeacon`/`fetch keepalive`
+  directamente, sin pasar por `src/app/api/`**: no tiene sentido generar un
+  método ahí de todas formas — su semántica de disparar-y-olvidar no encaja
+  en los métodos `Observable` que produce `openapi-generator`, y
+  `PROJECT_SPEC.md` lo pide explícito. `src/app/api/` sigue sin tocarse a
+  mano.
+- **`session_id` (`core/analytics/session-id.ts`)**: generado con
+  `crypto.randomUUID()` y persistido en `sessionStorage`, tal como exige
+  `ARQUITECTURA.md` §4.7 ("El `session_id` lo genera el navegador y vive en
+  `sessionStorage`"). No lleva guarda de plataforma propia: solo se invoca
+  desde `AnalyticsEventService.sendWhatsAppClick`, que ya comprueba
+  `isPlatformBrowser` antes de llamarla — mismo criterio que
+  `selection-storage.ts` (W9), que tampoco repite la guarda.
+- **`WhatsAppPreviewService` (`features/selection/whatsapp-preview/`) es un
+  servicio nuevo, separado de `SelectionService`**: no es la selección
+  persistida, es "lo que se está a punto de enviar ahora" — puede ser una
+  sola línea ad-hoc desde la tarjeta o el detalle (sin tocar la selección
+  guardada) o las líneas completas de la selección cuando se abre desde la
+  barra. Mezclar los dos conceptos en `SelectionService` habría acoplado la
+  persistencia en `sessionStorage` (W9) a un diálogo que nunca debería
+  persistirse.
+- **`toSelectionLine`/`SelectableProduct` movidos de `selection.service.ts` a
+  `selection.model.ts`** (exportados): el mapeo `ProductCard|ProductDetail →
+  SelectionLine` de W9 se reutiliza tal cual para las líneas individuales de
+  WhatsApp (tarjeta/detalle), aprovechando que `SelectionLine` ya es
+  estructuralmente compatible con `WhatsAppSelectionLine` (comentario ya
+  existente en el modelo desde W9). Sin este movimiento, el mapeo se habría
+  duplicado.
+- **El diálogo se monta una sola vez en `App`, hermano de `<router-outlet>` y
+  de `<app-selection-root>`** (`@defer (when whatsappPreview.open())`, mismo
+  patrón que `ProductDetailModal` en `CatalogPage`): puede abrirse desde la
+  tarjeta (grid), el detalle (página o modal) y la barra/panel de selección,
+  así que un montaje por sitio lo habría triplicado. El contenedor de
+  `<router-outlet>` pasa a `inert` también mientras este diálogo está abierto
+  (`PROJECT_SPEC.md` §6, regla 7), no solo con el panel de selección.
+- **El botón de WhatsApp de la tarjeta (`ProductCard`) siempre pide cantidad
+  1**: la tarjeta no tiene selector de cantidad (`PROJECT_SPEC.md` §5); el del
+  detalle (`ProductDetailContent`) reutiliza la cantidad ya elegida en el
+  mismo selector que usa "Añadir a la selección", y se deshabilita solo por
+  agotado — el envío individual no cuenta contra `catalog.max_selection`, a
+  diferencia de "Añadir a la selección".
+- **Verificado sin backend disponible en este entorno** (mismo motivo que
+  W3/W5/W6/W7/W9): `pnpm lint && pnpm test && pnpm build` en verde (224 tests;
+  bundle inicial 115.18 kB transferidos, dentro del presupuesto de 200 KB; el
+  diálogo se confirma como chunk perezoso independiente —
+  `whatsapp-preview-dialog`, 2.61 kB transferidos — en el `pnpm build`). Con
+  `pnpm start` (SSR) se confirmó con `curl` que `/` y `/p/:slug` siguen
+  devolviendo 200 sin el diálogo en el HTML crudo (nunca se renderiza en
+  servidor). La verificación completa con datos reales (número/plantillas
+  reales, evento `WHATSAPP_CLICK` llegando de verdad al backend) queda
+  pendiente, igual que en tareas anteriores.
 
 ---
 

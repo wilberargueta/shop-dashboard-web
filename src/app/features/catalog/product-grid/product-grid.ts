@@ -25,6 +25,8 @@ export class ProductGrid {
   readonly productOpen = output<ProductCardOpenEvent>();
   /** Reenvía el `selectionToggle` de la tarjeta que se pulsó (W9): sin lógica propia. */
   readonly selectionToggle = output<ProductCardDto>();
+  /** Reenvía el `whatsappRequested` de la tarjeta que se pulsó (W10): sin lógica propia. */
+  readonly whatsappRequested = output<ProductCardDto>();
 
   protected readonly priorityCount = PRIORITY_COUNT;
   protected readonly showSkeletons = computed(() => this.loading() && this.products().length === 0);

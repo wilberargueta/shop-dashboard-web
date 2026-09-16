@@ -10,6 +10,7 @@ import { ProductDetail } from '../../../api/model/product-detail';
 import { MAX_SELECTION } from '../../../core/config/max-selection.token';
 import { SITE_URL } from '../../../core/config/site-url.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
+import { WhatsAppPreviewService } from '../../selection/whatsapp-preview/whatsapp-preview.service';
 import { ProductDetailPage } from './product-detail-page';
 
 const TEST_ROUTES: Routes = [{ path: 'p/:slug', component: ProductDetailPage }];
@@ -128,5 +129,21 @@ describe('ProductDetailPage', () => {
     await harness.fixture.whenStable();
 
     expect(addButton.textContent).toContain('Quitar de la selección');
+  });
+
+  it('W10: clicking the WhatsApp button opens the preview with a single line for this product', async () => {
+    getProduct.mockReturnValue(of(buildProduct()));
+
+    const harness = await RouterTestingHarness.create('/p/aceite-esencial-de-lavanda-30ml');
+    const whatsappPreview = TestBed.inject(WhatsAppPreviewService);
+
+    const button = harness.routeNativeElement?.querySelector(
+      '.product-detail-content__whatsapp-button',
+    ) as HTMLButtonElement;
+    fireEvent.click(button);
+    await harness.fixture.whenStable();
+
+    expect(whatsappPreview.open()).toBe(true);
+    expect(whatsappPreview.lines()).toEqual([expect.objectContaining({ slug: 'aceite-esencial-de-lavanda-30ml', quantity: 1 })]);
   });
 });
