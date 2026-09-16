@@ -1,8 +1,10 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localeEsSv from '@angular/common/locales/es-SV';
 import { API_BASE_URL } from './core/config/api-base-url.token';
 import { MAX_SELECTION } from './core/config/max-selection.token';
 import { SITE_URL } from './core/config/site-url.token';
@@ -11,6 +13,14 @@ import { Configuration } from './api/configuration';
 import { ApiConfiguration } from './core/http/api-configuration';
 import { traceIdInterceptor } from './core/http/trace-id.interceptor';
 import { apiErrorInterceptor } from './core/http/api-error.interceptor';
+
+// `es-SV`, no `es`: `Intl.NumberFormat('es', ...)` da "20,00 US$"
+// (formato de España), que contradice el mockup de PROJECT_SPEC.md
+// ("$65.00") y el formato que WhatsAppTemplateService ya fija a `es-SV`
+// desde W8 ("$20.00"). Sin este registro, LOCALE_ID cae al `sourceLocale`
+// de angular.json ("es"), y CurrencyPipe formatea distinto a como se ve el
+// mismo precio en el mensaje de WhatsApp para el mismo producto.
+registerLocaleData(localeEsSv);
 
 // Relativa en el navegador: PROJECT_SPEC.md §8. Absoluta en app.config.server.ts.
 const apiBaseUrl = '';
@@ -54,6 +64,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideClientHydration(),
     provideHttpClient(withInterceptors([traceIdInterceptor, apiErrorInterceptor])),
+    { provide: LOCALE_ID, useValue: 'es-SV' },
     { provide: API_BASE_URL, useValue: apiBaseUrl },
     { provide: SITE_URL, useValue: siteUrl },
     { provide: MAX_SELECTION, useValue: maxSelection },

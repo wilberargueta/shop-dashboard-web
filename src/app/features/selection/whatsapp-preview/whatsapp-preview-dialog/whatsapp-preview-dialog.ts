@@ -66,7 +66,7 @@ export class WhatsAppPreviewDialog {
   protected onCopy(): void {
     navigator.clipboard
       .writeText(this.message())
-      .then(() => this.copyAnnouncement.set('Copiado.'))
+      .then(() => this.copyAnnouncement.set($localize`:@@whatsappPreviewDialog.copied:Copiado.`))
       .catch(() => this.copyAnnouncement.set(''));
   }
 }

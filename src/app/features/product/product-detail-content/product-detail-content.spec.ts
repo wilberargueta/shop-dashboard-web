@@ -33,7 +33,7 @@ describe('ProductDetailContent', () => {
 
     expect(screen.getByRole('heading', { name: 'Aceite esencial de lavanda 30ml' })).toBeTruthy();
     expect(screen.getByText('ACE-001', { exact: false })).toBeTruthy();
-    expect(screen.getByText('25,00 US$')).toBeTruthy();
+    expect(screen.getByText('$25.00')).toBeTruthy();
     expect(screen.getByText('Disponible')).toBeTruthy();
   });
 

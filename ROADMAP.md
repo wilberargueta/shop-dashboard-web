@@ -1085,7 +1085,7 @@ absoluta, canonical, Twitter Card). JSON-LD: `Product` + `Offer` en el detalle,
 
 ---
 
-### [ ] W12. Internacionalización
+### [x] W12. Internacionalización
 
 Externalizar **todos** los textos con `@angular/localize`. Pipes localizados
 para fechas, números y moneda. `<html lang="es">`.
@@ -1095,6 +1095,67 @@ para fechas, números y moneda. `<html lang="es">`.
   ningún texto de interfaz.
 - `pnpm extract-i18n` produce el archivo de mensajes completo.
 - Ningún precio, fecha o número formateado a mano.
+
+**Desviaciones:**
+- **Cobertura de partida ya alta**: desde W3 (documentado ahí como
+  desviación) el equipo viene aplicando `i18n`/`i18n-*` de forma incremental
+  en cada componente nuevo. Auditando las 19 plantillas del repo, la
+  práctica totalidad del texto de interfaz ya llevaba `i18n`. El trabajo real
+  de esta tarea fueron tres cadenas concretas que se habían quedado fuera
+  (viven en `.ts`, no en plantilla, y `ng extract-i18n` no las ve sin
+  `$localize`): el `title`/meta description de `<title>`
+  (`catalog-page.ts`, `@@catalogPage.metaTitle`/`@@catalogPage.metaDescription`),
+  el anuncio `aria-live` de "Copiado." al copiar el mensaje de WhatsApp
+  (`whatsapp-preview-dialog.ts`, `@@whatsappPreviewDialog.copied`), y el
+  nombre "Inicio" del `BreadcrumbList` JSON-LD (`seo.schema.ts`,
+  `@@seo.breadcrumbHome` — visible en resultados de búsqueda de Google, así
+  que cuenta como texto de interfaz aunque no esté en el DOM). `pnpm
+  extract-i18n` confirma los 88 mensajes, incluidos estos tres, con los
+  placeholders nombrados (`{{storeName}}`) resueltos correctamente.
+- **Bug real encontrado, no solo un hueco de i18n**: no existía ningún
+  `LOCALE_ID`/`registerLocaleData` en el repo. Angular resolvía el
+  `LOCALE_ID` de `CurrencyPipe` a partir de `angular.json` →
+  `i18n.sourceLocale: "es"`, formateando `20,00 US$` (formato de España) en
+  la tarjeta/detalle/selección — verificado porque los specs de
+  `ProductPrice` ya pasaban en verde esperando exactamente ese texto. Eso
+  contradice dos referencias ya cerradas: el mockup de `PROJECT_SPEC.md`
+  línea 231 (`[3 productos · $65.00] ...`) y el formato que
+  `WhatsAppTemplateService` ya fija a `es-SV` desde W8 (`$20.00`). Un mismo
+  precio se veía distinto en la tarjeta que en el mensaje de WhatsApp para
+  ese mismo producto. Corregido registrando `es-SV`
+  (`@angular/common/locales/es-SV`, existe) explícito en `app.config.ts`
+  (`registerLocaleData` + `{ provide: LOCALE_ID, useValue: 'es-SV' }`), que
+  `app.config.server.ts` ya fusiona para servidor y navegador. No se tocó
+  `<html lang="es">` ni `sourceLocale: "es"` — son conceptos distintos
+  (idioma del texto vs. formato regional) y el spec pide `lang="es"` literal.
+- **Hallazgo real de testing, no cubierto por la primera solución
+  intentada**: pasar `{ provide: LOCALE_ID, useValue: 'es-SV' }` en el
+  `providers` de `render()` de Testing Library (o incluso vía el
+  `--providers-file` de `@angular/build:unit-test`) no bastaba — `CurrencyPipe`
+  seguía formateando `20,00 US$`, a pesar de que `TestBed.inject(LOCALE_ID)`
+  confirmaba `'es-SV'` correctamente inyectado. Causa raíz: sin
+  `registerLocaleData(localeEsSv)` en el proceso de test (solo estaba en
+  `app.config.ts`, que estos tests no cargan), Angular no tiene datos
+  registrados para `es-SV` y cae por coincidencia de prefijo al `es` que sí
+  registra `@angular/localize` a partir de `sourceLocale` — mismo bug que en
+  producción, silencioso porque el `LOCALE_ID` inyectado seguía siendo
+  `'es-SV'` en la inspección de DI, solo el formato salía mal. Arreglado con
+  un único punto de verdad para todos los tests: `src/test-providers.ts`
+  (registra los datos de locale y exporta el mismo `LOCALE_ID`), enganchado
+  vía `angular.json` → `architect.test.options.providersFile` (opción nueva
+  del builder `@angular/build:unit-test`, no existía en el repo). Se
+  actualizaron las aserciones de moneda en `product-price.spec.ts`,
+  `product-card.spec.ts`, `selection-bar.spec.ts`, `selection-panel.spec.ts`
+  y `product-detail-content.spec.ts` de `'25,00 US$'` (formato incorrecto,
+  hoy corregido) a `'$25.00'`.
+- **Verificado con SSR real (`pnpm start`), sin backend disponible en este
+  entorno** (mismo motivo que W3/W5/W6/W7): `curl` sobre `http://localhost:4200/`
+  confirma `<html lang="es">`, `<title>Mi Tienda — Catálogo</title>` (el
+  `$localize` de `catalog-page.ts` con el placeholder de `storeName`
+  resuelto) y `"name":"Inicio"` en el JSON-LD del breadcrumb. Sin backend no
+  hay productos reales en la respuesta, así que la comprobación visual de un
+  precio con formato `$XX.XX` en HTML servido queda pendiente de repetir con
+  `shop-backend-service` levantado — no se inventó el resultado.
 
 ---
 

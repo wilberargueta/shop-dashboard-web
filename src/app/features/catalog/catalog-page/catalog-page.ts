@@ -170,8 +170,8 @@ export class CatalogPage {
     // así el canonical de `/` nunca refleja un filtro/orden/página (spec §9).
     const canonicalUrl = `${this.siteUrl}/`;
     this.seo.updatePageTags({
-      title: `${this.storeName} — Catálogo`,
-      description: `Explora el catálogo de productos de ${this.storeName}.`,
+      title: $localize`:@@catalogPage.metaTitle:${this.storeName}:storeName: — Catálogo`,
+      description: $localize`:@@catalogPage.metaDescription:Explora el catálogo de productos de ${this.storeName}:storeName:.`,
       url: canonicalUrl,
       type: 'website',
     });

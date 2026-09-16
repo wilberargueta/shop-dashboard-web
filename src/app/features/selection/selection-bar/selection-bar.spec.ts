@@ -6,7 +6,7 @@ describe('SelectionBar', () => {
     await render(SelectionBar, { inputs: { count: 1, subtotal: 20, currency: 'USD' } });
 
     expect(screen.getByText('1 producto')).toBeTruthy();
-    expect(screen.getByText('20,00 US$')).toBeTruthy();
+    expect(screen.getByText('$20.00')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ver' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeTruthy();
   });

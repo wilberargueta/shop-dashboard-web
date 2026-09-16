@@ -30,7 +30,7 @@ describe('SelectionPanel', () => {
     const labelledBy = dialog.getAttribute('aria-labelledby');
     expect(document.getElementById(labelledBy as string)?.textContent).toContain('Tu selección');
     expect(screen.getByText('Aceite esencial de lavanda 30ml')).toBeTruthy();
-    expect(screen.getByText('40,00 US$')).toBeTruthy();
+    expect(screen.getByText('$40.00')).toBeTruthy();
   });
 
   it('emits quantityChange with the productId when a line quantity changes', async () => {

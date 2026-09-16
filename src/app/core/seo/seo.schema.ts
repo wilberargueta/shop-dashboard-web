@@ -76,7 +76,9 @@ export function buildBreadcrumbJsonLd(siteUrl: string): Record<string, unknown> 
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Inicio', item: `${siteUrl}/` }],
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: $localize`:@@seo.breadcrumbHome:Inicio`, item: `${siteUrl}/` },
+    ],
   };
 }
 

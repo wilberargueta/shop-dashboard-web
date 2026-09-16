@@ -27,20 +27,19 @@ describe('ProductCard', () => {
   it('shows the effective price without a discount badge when the product is not on sale', async () => {
     await render(ProductCard, { inputs: { product: buildProduct() } });
 
-    expect(screen.getByText('25,00 US$')).toBeTruthy();
+    expect(screen.getByText('$25.00')).toBeTruthy();
     expect(screen.queryByText(/precio anterior/i)).toBeNull();
     expect(screen.queryByText(/^-\d+%$/)).toBeNull();
   });
 
   it('shows list price struck through, effective price and the percentage badge when on sale', async () => {
-    await render(
-      ProductCard,
-      { inputs: { product: buildProduct({ onSale: true, discountPercentage: 20, effectivePrice: 20 }) } },
-    );
+    await render(ProductCard, {
+      inputs: { product: buildProduct({ onSale: true, discountPercentage: 20, effectivePrice: 20 }) },
+    });
 
-    const listPrice = screen.getByText('25,00 US$');
+    const listPrice = screen.getByText('$25.00');
     expect(listPrice.tagName).toBe('S');
-    expect(screen.getByText('20,00 US$')).toBeTruthy();
+    expect(screen.getByText('$20.00')).toBeTruthy();
     expect(screen.getByText('-20%')).toBeTruthy();
     expect(screen.getByText('precio anterior')).toBeTruthy();
   });
