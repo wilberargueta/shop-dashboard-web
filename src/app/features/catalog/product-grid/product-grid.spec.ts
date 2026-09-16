@@ -68,4 +68,15 @@ describe('ProductGrid', () => {
     expect(container.querySelectorAll('app-product-card')).toHaveLength(2);
     expect(container.querySelectorAll('app-skeleton-card').length).toBeGreaterThan(0);
   });
+
+  it('forwards a card open event as productOpen, unchanged', async () => {
+    const { container, fixture } = await render(ProductGrid, { inputs: { products: buildProducts(2) } });
+    const openSpy = vi.fn();
+    fixture.componentInstance.productOpen.subscribe(openSpy);
+
+    const link = container.querySelectorAll('.product-card__link')[1] as HTMLAnchorElement;
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+
+    expect(openSpy).toHaveBeenCalledWith({ slug: 'producto-1', origin: link });
+  });
 });

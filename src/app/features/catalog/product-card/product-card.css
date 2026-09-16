@@ -13,6 +13,12 @@
   border-radius: var(--radius-md);
 }
 
+.product-card__link {
+  display: contents;
+  color: inherit;
+  text-decoration: none;
+}
+
 .product-card__picture {
   display: block;
   border-radius: var(--radius-sm);

@@ -117,4 +117,37 @@ describe('ProductCard', () => {
     expect(img?.getAttribute('loading')).toBe('lazy');
     expect(img?.hasAttribute('fetchpriority')).toBe(false);
   });
+
+  it('renders a real, crawlable link to the product detail route', async () => {
+    await render(ProductCard, { inputs: { product: buildProduct() } });
+
+    const link = screen.getByRole('link', { name: 'Aceite esencial de lavanda 30ml' });
+    expect(link.getAttribute('href')).toBe('/p/aceite-esencial-de-lavanda-30ml');
+  });
+
+  it('case 32 (W7): a plain click emits open with the slug and the clicked anchor, without navigating', async () => {
+    const { container, fixture } = await render(ProductCard, { inputs: { product: buildProduct() } });
+    const openSpy = vi.fn();
+    fixture.componentInstance.open.subscribe(openSpy);
+    const link = container.querySelector('.product-card__link') as HTMLAnchorElement;
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(openSpy).toHaveBeenCalledWith({ slug: 'aceite-esencial-de-lavanda-30ml', origin: link });
+  });
+
+  it('lets a modified click (Ctrl+click) fall through to native navigation instead of opening the modal', async () => {
+    const { container, fixture } = await render(ProductCard, { inputs: { product: buildProduct() } });
+    const openSpy = vi.fn();
+    fixture.componentInstance.open.subscribe(openSpy);
+    const link = container.querySelector('.product-card__link') as HTMLAnchorElement;
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+    link.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
 });

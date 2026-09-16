@@ -649,7 +649,7 @@ Un slug inexistente o de un producto no publicado devuelve **404 real**.
 
 ---
 
-### [ ] W7. Modal de detalle sobre el grid
+### [x] W7. Modal de detalle sobre el grid
 
 El mismo contenido de W6 dentro de un modal poco intrusivo, que **cambia la URL
 a `/p/:slug`** sin recargar. Cargado bajo demanda.
@@ -666,6 +666,79 @@ al cerrar.
 - El caso 36 (foco devuelto a la tarjeta exacta) tiene test.
 - Abrir el modal y recargar la página muestra la vista completa de W6.
 - Axe sin infracciones con el modal abierto.
+
+**Desviaciones:**
+- **`ProductCard` no era clicable en absoluto antes de esta tarea**: W3 solo
+  le había puesto el botón "Agotado" adelantado. Se envolvió imagen + nombre
+  + precio en un `<a>` real (`[attr.href]="'/p/' + slug"`, `display: contents`
+  en CSS para no romper el layout de la tarjeta) con `aria-label` = nombre del
+  producto. Un clic simple hace `preventDefault()` y emite
+  `open = output<{slug, origin: HTMLAnchorElement}>()`; un clic modificado
+  (botón central, Ctrl/Cmd/Shift/Alt) se deja pasar para que el navegador
+  abra en pestaña nueva con normalidad — es un enlace real, rastreable y
+  funcional sin JS, no un `div` con `(click)`. `ProductGrid` solo reenvía el
+  evento como `productOpen`, sin lógica propia.
+- **Enrutado sin pasar por el `Router`, decisión no cerrada del todo en
+  `PROJECT_SPEC.md` §2** (que solo sugiere `Location.replaceState` o
+  `skipLocationChange: false`): `CatalogPage` inyecta `Location`
+  directamente y usa `location.go('/p/' + slug)` para abrir y
+  `location.back()` para cerrar. `Location.go()` llama a `pushState`
+  directamente — el `Router` de Angular solo reacciona a `popstate`/
+  `hashchange`, nunca a un `pushState` programático — así que `CatalogPage`
+  nunca se destruye al abrir o cerrar el modal. El botón "atrás" real del
+  navegador sí dispara `popstate`: `CatalogPage` se suscribe con
+  `location.subscribe(...)` y cierra el modal si la URL deja de empezar por
+  `/p/` (y lo reabre simétricamente si la URL pasa a `/p/:slug` por el botón
+  "adelante"). Verificado leyendo
+  `node_modules/@angular/common/fesm2022/testing.mjs`: `SpyLocation.go()` y
+  `.back()` notifican a los suscriptores de forma sincrónica, así que los
+  tests no necesitan esperas adicionales para esta parte. No se creó un
+  servicio nuevo para esto (`CatalogPage` es el único sitio que abre el
+  modal hoy) — si W9/W10 necesitan abrir el detalle desde otro sitio, se
+  extrae entonces.
+- **Sin guardar/restaurar scroll a mano (caso 33)**: el grid nunca sale del
+  DOM (el modal es un overlay hermano de `<main>`, que solo recibe `inert` y
+  un `filter: blur()`), así que la posición de `window.scrollY` se conserva
+  sola al desbloquear `document.documentElement.style.overflow` al cerrar.
+  Bloqueo de scroll (caso 39) implementado con un `effect()` guardado tras
+  `isPlatformBrowser`, con limpieza en `DestroyRef.onDestroy` por si el
+  componente se destruyera con el modal abierto.
+- **Nuevo `ProductDetailModal`** (`features/product/product-detail-modal/`):
+  llama a la API igual que `ProductDetailPage` (mismo patrón
+  `.status() === 'resolved'` antes de leer `.value()`), pero **sin**
+  `RESPONSE_INIT` ni actualizar `Title`/`Meta` — nunca se renderiza en
+  servidor (se carga bajo demanda tras una interacción real del usuario) y
+  los meta tags reales para compartir el enlace ya los pone
+  `ProductDetailPage` cuando alguien entra o recarga en `/p/:slug`, que es
+  el caso que importa para SEO/WhatsApp. Ampliar esto es terreno de W11.
+  Reutiliza `FocusTrap` (`shared/focus-trap/`, de W5) tal cual — ya soportaba
+  `returnFocusTo`, no hizo falta tocarlo.
+- **`ProductDetailContent` gana un `titleId` opcional**, por defecto `null`
+  (sin `id` en el `<h1>`, como hasta ahora en la página standalone de W6):
+  el modal lo usa para su `aria-labelledby`.
+- **`@defer (when openSlug() !== null)` con un `@if` reactivo dentro**, el
+  mismo patrón de `catalog-filter-mobile-panel.html` (W5): el chunk de
+  `ProductDetailModal` se descarga solo la primera vez que se abre un
+  producto (confirmado en `pnpm build`: `product-detail-modal` aparece como
+  chunk perezoso de 1.44 kB transferidos) y luego se abre/cierra sin volver
+  a pedirlo. El bundle inicial quedó en 110.55 kB transferidos, dentro del
+  presupuesto de 200 KB.
+- **Verificado sin backend disponible en este entorno** (mismo motivo que
+  W3/W5/W6: `curl http://localhost:8080/api/public/v1/products` da
+  "Connection refused" en este sandbox): `pnpm lint && pnpm test && pnpm
+  build` en verde (141 tests, incluidos los casos 32, 34, 35, 36 y 39 más
+  `inert`/scroll-lock/botón-atrás-real a nivel de componente en
+  `catalog-page.spec.ts`, y el modal en aislado en
+  `product-detail-modal.spec.ts`). Con `pnpm start` (SSR) se confirmó con
+  `curl` que `/` sigue devolviendo 200 sin el modal en el HTML (nunca se
+  abre en servidor) y que `/p/:slug` sigue renderizando
+  `<app-product-detail-page>` completo. El caso 33 de extremo a extremo, la
+  comprobación de "recargar con el modal abierto muestra la vista completa
+  de W6" y el chequeo de Axe con el modal abierto están escritos en
+  `e2e/product-modal.spec.ts` (compilan y `playwright test --list` los
+  encuentra) pero **no se han ejecutado de verdad** contra datos reales —
+  queda pendiente repetir `pnpm e2e` con `shop-backend-service` levantado,
+  igual que quedó documentado en W3/W5/W6.
 
 ---
 

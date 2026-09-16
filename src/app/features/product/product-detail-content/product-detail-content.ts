@@ -18,6 +18,8 @@ import { QuantityStepper } from '../../../shared/quantity-stepper/quantity-stepp
 })
 export class ProductDetailContent {
   readonly product = input.required<ProductDetail>();
+  /** El modal de W7 lo usa para `aria-labelledby`; la página standalone no lo necesita. */
+  readonly titleId = input<string | null>(null);
 
   protected readonly images = computed(() => this.product().images ?? []);
 }

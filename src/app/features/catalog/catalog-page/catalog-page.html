@@ -1,4 +1,4 @@
-<main class="catalog-page">
+<main class="catalog-page" [class.catalog-page--dimmed]="openSlug() !== null" [attr.inert]="openSlug() !== null ? '' : null">
   <div class="catalog-page__header">
     <h1 class="catalog-page__title" i18n="@@catalogPage.title">Catálogo</h1>
     <app-catalog-filter-mobile-panel
@@ -29,7 +29,12 @@
           </button>
         </div>
       } @else {
-        <app-product-grid [products]="products()" [loading]="isLoadingFirst()" [loadingMore]="isLoadingMore()" />
+        <app-product-grid
+          [products]="products()"
+          [loading]="isLoadingFirst()"
+          [loadingMore]="isLoadingMore()"
+          (productOpen)="onProductOpen($event)"
+        />
         <app-catalog-load-more
           [hasNext]="hasNext()"
           [loading]="isLoadingMore()"
@@ -41,3 +46,9 @@
     </div>
   </div>
 </main>
+
+@defer (when openSlug() !== null) {
+  @if (openSlug(); as slug) {
+    <app-product-detail-modal [slug]="slug" [returnFocusTo]="modalOrigin()" (closed)="onModalClose()" />
+  }
+}

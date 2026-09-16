@@ -8,6 +8,11 @@
   padding: var(--space-5) var(--space-4);
 }
 
+.catalog-page--dimmed {
+  filter: blur(2px);
+  pointer-events: none;
+}
+
 .catalog-page__header {
   display: flex;
   align-items: center;

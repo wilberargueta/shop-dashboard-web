@@ -1,7 +1,7 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { SkeletonCard } from '../../../shared/skeleton-card/skeleton-card';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
-import { ProductCard } from '../product-card/product-card';
+import { ProductCard, ProductCardOpenEvent } from '../product-card/product-card';
 
 const PRIORITY_COUNT = 6;
 const TRAILING_SKELETON_COUNT = 3;
@@ -18,6 +18,9 @@ export class ProductGrid {
   /** Ya hay productos en pantalla; se está pidiendo el siguiente lote (W4). */
   readonly loadingMore = input(false);
   readonly skeletonCount = input(PRIORITY_COUNT);
+
+  /** Reenvía el `open` de la tarjeta que se pulsó (W7): sin lógica propia. */
+  readonly productOpen = output<ProductCardOpenEvent>();
 
   protected readonly priorityCount = PRIORITY_COUNT;
   protected readonly showSkeletons = computed(() => this.loading() && this.products().length === 0);

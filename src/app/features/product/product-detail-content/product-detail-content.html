@@ -8,7 +8,7 @@
   }
 
   <div class="product-detail-content__info">
-    <h1 class="product-detail-content__name">{{ product().name }}</h1>
+    <h1 class="product-detail-content__name" [attr.id]="titleId()">{{ product().name }}</h1>
 
     <p class="product-detail-content__sku">
       <span i18n="@@productDetailContent.skuLabel">SKU</span>: {{ product().sku }}

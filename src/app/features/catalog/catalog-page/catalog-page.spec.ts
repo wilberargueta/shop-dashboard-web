@@ -16,6 +16,7 @@ function buildResponse(page: number, count: number, hasNext: boolean): PageRespo
     content: Array.from({ length: count }, (_, i) => ({
       id: `p${page}-${i}`,
       name: `Producto ${page}-${i}`,
+      slug: `p${page}-${i}`,
       price: 10,
       effectivePrice: 10,
       onSale: false,
@@ -38,19 +39,49 @@ function loadMoreButton(harness: RouterTestingHarness): HTMLButtonElement {
   return button as HTMLButtonElement;
 }
 
+function productLinks(harness: RouterTestingHarness): HTMLAnchorElement[] {
+  return Array.from(harness.routeNativeElement?.querySelectorAll('.product-card__link') ?? []);
+}
+
+async function openModal(harness: RouterTestingHarness, index = 0): Promise<HTMLAnchorElement> {
+  const link = productLinks(harness)[index];
+  fireEvent.click(link);
+  await harness.fixture.whenStable();
+  return link;
+}
+
+function dialog(harness: RouterTestingHarness): HTMLElement {
+  const element = harness.routeNativeElement?.querySelector('[role="dialog"]');
+  if (!element) {
+    throw new Error('dialog not found');
+  }
+  return element as HTMLElement;
+}
+
 describe('CatalogPage', () => {
   let listProducts: ReturnType<typeof vi.fn>;
   let listCategories: ReturnType<typeof vi.fn>;
+  let getProduct: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     listProducts = vi.fn();
     listCategories = vi.fn().mockReturnValue(of([]));
+    // Resuelto por defecto con un producto mínimo: estos tests comprueban el
+    // diálogo (URL, foco, `inert`, scroll), no el contenido — eso ya lo
+    // cubre `product-detail-modal.spec.ts`. Un `Subject` que nunca emite
+    // dejaría el `resource()` en "loading" para siempre, y con eso
+    // `fixture.whenStable()` (que espera las tareas pendientes de la app,
+    // incluidas las de `resource()`/`httpResource()` en zoneless) no se
+    // resolvería nunca.
+    getProduct = vi.fn().mockReturnValue(
+      of({ id: 'p0-0', name: 'Producto', slug: 'p0-0', price: 10, effectivePrice: 10, currency: 'USD' }),
+    );
 
     TestBed.configureTestingModule({
       providers: [
         provideRouter(TEST_ROUTES),
         provideLocationMocks(),
-        { provide: PublicCatalogControllerService, useValue: { listProducts, listCategories } },
+        { provide: PublicCatalogControllerService, useValue: { listProducts, listCategories, getProduct } },
       ],
     });
   });
@@ -249,5 +280,99 @@ describe('CatalogPage', () => {
 
     expect(harness.routeNativeElement?.textContent).toContain('Aceites (12)');
     expect(harness.routeNativeElement?.textContent).toContain('Cremas (5)');
+  });
+
+  describe('W7 — modal de detalle sobre el grid', () => {
+    it('case 32: opening a card shows the dialog and changes the URL to /p/:slug without a full navigation', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 2, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      await openModal(harness, 0);
+
+      expect(TestBed.inject(Location).path()).toBe('/p/p0-0');
+      expect(harness.routeNativeElement?.querySelector('[role="dialog"]')).toBeTruthy();
+      // El grid sigue montado detrás, solo queda `inert` — no una navegación real.
+      expect(harness.routeNativeElement?.querySelectorAll('app-product-card')).toHaveLength(2);
+    });
+
+    it('puts inert on the grid while the modal is open, and removes it on close', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      const main = harness.routeNativeElement?.querySelector('main.catalog-page') as HTMLElement;
+      expect(main.hasAttribute('inert')).toBe(false);
+
+      await openModal(harness);
+      expect(main.hasAttribute('inert')).toBe(true);
+
+      fireEvent.keyDown(dialog(harness), { key: 'Escape' });
+      await harness.fixture.whenStable();
+      expect(main.hasAttribute('inert')).toBe(false);
+    });
+
+    it('case 34: Escape closes the dialog and the URL goes back to /', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      await openModal(harness);
+      fireEvent.keyDown(dialog(harness), { key: 'Escape' });
+      await harness.fixture.whenStable();
+
+      expect(harness.routeNativeElement?.querySelector('[role="dialog"]')).toBeNull();
+      expect(TestBed.inject(Location).path()).toBe('/');
+    });
+
+    it('case 35: focus moves into the dialog and stays trapped there while it is open', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      await openModal(harness);
+
+      expect(dialog(harness).contains(document.activeElement)).toBe(true);
+    });
+
+    it('case 36: closing returns focus to the exact card that opened the modal, not just any card', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 3, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      const openedLink = await openModal(harness, 1);
+      fireEvent.keyDown(dialog(harness), { key: 'Escape' });
+      await harness.fixture.whenStable();
+
+      expect(document.activeElement).toBe(openedLink);
+    });
+
+    it('case 39: locks background scroll while the modal is open and restores it on close', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      await openModal(harness);
+      expect(document.documentElement.style.overflow).toBe('hidden');
+
+      fireEvent.keyDown(dialog(harness), { key: 'Escape' });
+      await harness.fixture.whenStable();
+      expect(document.documentElement.style.overflow).toBe('');
+    });
+
+    it('the real back button (popstate) closes the modal too, without a second location.back() call', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 1, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      await openModal(harness);
+      const location = TestBed.inject(Location);
+      // Simula el botón "atrás" real del navegador, no un cierre desde la UI.
+      location.back();
+      await harness.fixture.whenStable();
+
+      expect(harness.routeNativeElement?.querySelector('[role="dialog"]')).toBeNull();
+      expect(location.path()).toBe('/');
+    });
   });
 });
