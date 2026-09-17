@@ -8,9 +8,9 @@
   (keydown)="onKeydown($event)"
 >
   <div class="product-image-carousel__viewport">
-    <ul class="product-image-carousel__track" #track>
+    <div class="product-image-carousel__track" #track>
       @for (image of images(); track image.altText + '-' + $index; let i = $index) {
-        <li
+        <div
           class="product-image-carousel__slide"
           role="group"
           aria-roledescription="imagen"
@@ -37,9 +37,9 @@
               decoding="async"
             />
           </picture>
-        </li>
+        </div>
       }
-    </ul>
+    </div>
 
     @if (total() > 1) {
       <button
@@ -95,7 +95,19 @@
           (click)="goTo(i)"
         >
           <span class="visually-hidden" i18n="@@productImageCarousel.goToImage">Ir a la imagen {{ i + 1 }}</span>
-          <img [src]="image.detail?.jpeg ?? image.detail?.webp" alt="" loading="lazy" decoding="async" />
+          <picture>
+            @if (image.detail?.webp) {
+              <source type="image/webp" [srcset]="image.detail.webp" />
+            }
+            <img
+              [src]="image.detail?.jpeg ?? image.detail?.webp"
+              alt=""
+              [attr.width]="image.detail?.width ?? 1400"
+              [attr.height]="image.detail?.height ?? 1400"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
         </button>
       }
     </div>

@@ -52,11 +52,15 @@
 
 @media (min-width: bp.$lg) {
   .product-detail-modal__panel {
+    /* `inset` es el atajo de `top`/`right`/`bottom`/`left` juntos: declararlo
+       después de fijarlos por separado los pisaba de vuelta a `auto` (el
+       centrado nunca se aplicaba, el panel quedaba fuera del viewport,
+       confirmado con `getComputedStyle` — `top` resolvía a la posición
+       estática del elemento, cerca del final del documento). */
     top: 50%;
     left: 50%;
     right: auto;
     bottom: auto;
-    inset: auto;
     transform: translate(-50%, -50%);
     width: min(90vw, 64rem);
     max-height: min(90dvh, 48rem);

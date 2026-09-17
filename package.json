@@ -13,7 +13,8 @@
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
     "extract-i18n": "ng extract-i18n",
-    "lighthouse": "lighthouse http://localhost:4000 --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate --output=html --output-path=./lighthouse-report.html --chrome-flags=\"--headless\""
+    "lighthouse": "lighthouse http://localhost:4000 --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate --output=html --output-path=./lighthouse-report.html --chrome-flags=\"--headless\"",
+    "lighthouse:product": "lighthouse http://localhost:4000/p/aceite-esencial-de-lavanda-30ml --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate --output=html --output-path=./lighthouse-report-product.html --chrome-flags=\"--headless\""
   },
   "private": true,
   "packageManager": "pnpm@12.4.1",
@@ -30,6 +31,7 @@
     "@angular/platform-server": "^22.1.0",
     "@angular/router": "^22.1.0",
     "@angular/ssr": "^22.1.8",
+    "compression": "^1.8.2",
     "express": "^5.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -46,6 +48,7 @@
     "@playwright/test": "^1.63.0",
     "@testing-library/angular": "^19.5.0",
     "@testing-library/dom": "^10.4.1",
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.1",
     "@types/node": "^24.13.4",
     "@vitest/coverage-v8": "^4.1.11",

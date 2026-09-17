@@ -119,11 +119,14 @@
 
 @media (min-width: bp.$lg) {
   .selection-panel__panel {
+    /* `inset` es el atajo de `top`/`right`/`bottom`/`left`: declararlo
+       después de fijarlos por separado los pisaba de vuelta a `auto` y el
+       panel centrado quedaba fuera del viewport (mismo bug encontrado y
+       corregido en `product-detail-modal.scss`, W14). */
     top: 50%;
     left: 50%;
     right: auto;
     bottom: auto;
-    inset: auto;
     transform: translate(-50%, -50%);
     width: min(90vw, 40rem);
     max-height: min(90dvh, 48rem);

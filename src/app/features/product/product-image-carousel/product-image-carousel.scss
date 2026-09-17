@@ -132,6 +132,10 @@
     border-color: var(--color-primary);
   }
 
+  .product-image-carousel__thumbnail picture {
+    display: block;
+  }
+
   .product-image-carousel__thumbnail img {
     display: block;
     width: 100%;

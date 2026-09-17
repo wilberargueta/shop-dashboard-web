@@ -105,7 +105,12 @@ test.describe('caso 54: la barra de selección no tapa el último producto', () 
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
 
-      const firstCheckbox = page.getByRole('checkbox').first();
+      // Acotado a la lista de productos: a 1280px el panel de filtros de
+      // escritorio también tiene casillas (categorías, ofertas) y
+      // `getByRole('checkbox').first()` sin acotar cogía esa, no la de
+      // seleccionar un producto — marcar un filtro refresca el grid entero
+      // y desprende la tarjeta que ya se había resuelto como "última".
+      const firstCheckbox = page.getByRole('list').getByRole('checkbox').first();
       await firstCheckbox.click();
       const bar = page.getByRole('region', { name: 'Selección de productos' });
 
@@ -188,6 +193,16 @@ test.describe('caso 56: un nombre de 120 caracteres sin espacios no desborda la 
 
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto('/');
+
+    // El primer lote real ya llega en el HTML del servidor (W14, caso 44
+    // corregido): el cliente no vuelve a pedirlo tras la hidratación, así
+    // que el mock de arriba nunca se usaría sin forzar una petición nueva
+    // desde el navegador. Buscar algo cambia los parámetros de la petición
+    // a una combinación que el servidor nunca renderizó, así que sí golpea
+    // el mock.
+    await page.getByRole('button', { name: 'Filtros' }).click();
+    await page.getByRole('searchbox', { name: 'Buscar' }).fill('x');
+    await page.waitForTimeout(400);
 
     const name = page.locator('.product-card__name');
     await expect(name).toBeVisible();

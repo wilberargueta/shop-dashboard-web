@@ -48,8 +48,19 @@
   cursor: not-allowed;
 }
 
+/*
+ * `display: contents` (como antes) deja al enlace sin caja propia — en
+ * Chromium eso lo saca por completo del orden de tabulación: se sigue
+ * exponiendo con `role="link"` en el árbol de accesibilidad (por eso axe no
+ * lo marcaba), pero ni `Tab` ni el foco programático llegan nunca a él.
+ * Replicar aquí el mismo flex en columna del `.product-card` que lo
+ * contiene mantiene el layout idéntico (la imagen, el nombre y el precio
+ * siguen apilados con el mismo `gap`) sin dejar al enlace sin caja.
+ */
 .product-card__link {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   color: inherit;
   text-decoration: none;
 }

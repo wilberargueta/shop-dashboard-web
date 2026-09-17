@@ -4,6 +4,7 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import compression from 'compression';
 import express from 'express';
 import { join } from 'node:path';
 import { buildRobotsTxt } from './server/seo/robots-txt.builder';
@@ -15,6 +16,19 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+/**
+ * Sin esto, el servidor sirve el JS/CSS/HTML tal cual, sin `Content-Encoding`
+ * (verificado con `curl -H "Accept-Encoding: gzip"`, sin cabecera de vuelta).
+ * `PROJECT_SPEC.md §10` mide el JS inicial "comprimido" — el 113 KB que
+ * reporta `pnpm build` es solo la estimación de la CLI, no algo que el
+ * servidor real aplicara. Bug real encontrado al correr Lighthouse contra
+ * este servidor con el backend real levantado (W14): sin compresión, LCP
+ * caía a ~3.6s bajo la simulación de 4G (Rendimiento 83, por debajo del 90
+ * objetivo) porque el navegador descargaba los ~400 KB sin comprimir de los
+ * bundles iniciales, no los ~114 KB documentados.
+ */
+app.use(compression());
 
 // Mismas variables que ya lee app.config.server.ts — sin nombres nuevos.
 const siteUrl = process.env['SITE_URL'] ?? 'http://localhost:4200';

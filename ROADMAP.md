@@ -1271,7 +1271,7 @@ motivo que W3/W5/W6/W7/W9/W10/W11/W12:**
 
 ---
 
-### [ ] W14. Rendimiento y accesibilidad
+### [x] W14. Rendimiento y accesibilidad
 
 Auditoría y corrección hasta cumplir los objetivos de `PROJECT_SPEC.md` §10 y
 §12. Carga diferida de rutas y componentes pesados. Presupuestos de tamaño
@@ -1289,43 +1289,202 @@ configurados en `angular.json` que **rompen el build** al excederse.
 - **Caso 44 de §15** (trasladado desde `W4`, decisión tomada con el usuario):
   el primer lote de `/` no se pide dos veces (servidor + hidratación).
 
-**Pendiente — resolver antes de dar la tarea por terminada:**
-- **Caso 44: el primer lote SÍ se pide dos veces hoy.** Verificado con
-  Playwright contra el backend real (`shop-backend-service`,
-  `localhost:8080`): tras `waitUntil: 'networkidle'` en `/`, el navegador
-  dispara una petición extra a `/api/public/v1/products?page=0`, además de
-  la que ya hizo el servidor (confirmada por el bloque de `TransferState`
-  embebido en el HTML crudo, que trae `"u":"http://localhost:8080/api/public/v1/products"`).
+**Desviaciones:**
 
-  **Causa raíz**: `HttpTransferCache` de Angular calcula la clave de caché a
-  partir del string completo de la URL de la petición. `app.config.server.ts`
-  usa una URL **absoluta** (`http://localhost:8080/...`) y `app.config.ts`
-  usa una **relativa** (`''`) — decisión explícita de `PROJECT_SPEC.md` §8.
-  Server y cliente generan claves distintas, así que nunca hay *match* y el
-  cliente vuelve a pedir.
+- **Caso 44 resuelto con `cacheFirstValue` (`core/http/transfer-state-cache.ts`),
+  decisión tomada con el usuario entre las dos opciones que había dejado
+  abiertas W4**: TransferState manual por clave propia, no cambiar el origen
+  del navegador a absoluto — evita introducir CORS donde hoy no existe (el
+  navegador sigue llamando a través del proxy de desarrollo / mismo origen en
+  producción). El helper guarda en servidor el primer valor emitido bajo una
+  clave que no depende de la URL (`catalog-products:${JSON.stringify(params)}`,
+  `catalog-categories`, `product-detail:${slug}`) y, en navegador, si la clave
+  existe la usa sin llamar a la API y la borra — cualquier petición posterior
+  con una forma de parámetros distinta (scroll infinito, otro filtro) no
+  encuentra clave y pide normal. Aplicado en `CatalogPage` (`pageResource` y
+  `categoriesResource`) y `ProductDetailPage` (`productResource`);
+  `ProductDetailModal` no lo necesita porque nunca se renderiza en servidor.
+  **Verificado de extremo a extremo contra el backend real** (interceptando
+  requests del navegador con Playwright tras `waitUntil: 'networkidle'`):
+  cero peticiones a `/api/public/v1/**` desde el navegador en la carga
+  inicial de `/`. Cubierto con test unitario del helper
+  (`transfer-state-cache.spec.ts`) y con un e2e nuevo, `e2e/ssr.spec.ts`.
+- **Ruta `/p/:slug` pasada a `loadComponent`** (`app.routes.ts`): antes se
+  importaba `ProductDetailPage` de forma estática, así que iba dentro del
+  bundle inicial aunque `/` nunca la necesite. `CatalogPage` se queda eager
+  (es la propia ruta `/`). Confirmado en `pnpm build`: `product-detail-page`
+  aparece como chunk perezoso (1.71 kB transferidos).
+- **Presupuestos de `angular.json` recalibrados, no solo "más estrictos"**:
+  los `budgets` de Angular comparan contra el tamaño **crudo** de los
+  bundles, no contra el "estimated transfer size" que reporta la CLI (que sí
+  es el número que este ROADMAP viene citando como "kB transferidos" en
+  W5/W7/W10/W13). Con el build real de esta tarea, initial crudo 408 kB ↔
+  transferido 113.79 kB (ratio ≈3.59). `maximumWarning` pasó de 500 kB a
+  450 kB y `maximumError` de 1 MB a 700 kB — ese error, aplicando el ratio
+  observado, corresponde a ~195 kB comprimidos, justo por debajo del
+  objetivo de 200 KB con margen de seguridad. Es un proxy calibrado contra
+  este build concreto, no una garantía exacta (el ratio cambia según qué se
+  añada); el número real que hay que seguir vigilando en cada `pnpm build`
+  es la columna "Estimated transfer size" de "Initial total".
+- **Miniaturas del carrusel de detalle sin `width`/`height`, corregido**:
+  `product-image-carousel.html` ya declaraba dimensiones en la imagen
+  principal pero no en las miniaturas (línea ~98). Se añadieron
+  `width`/`height` y un `<picture>` con `<source webp>`, mismo patrón que el
+  resto del repo. La rendición que usan sigue siendo `detail` (1400×1400) —
+  `ImageDetailRef` no expone una rendición `thumb` propia, mismo tipo de
+  límite documentado en `W3.1` para `card2x` — así que la miniatura descarga
+  la imagen a tamaño completo aunque se muestre pequeña; pedir al backend una
+  rendición `thumb` en `images[]` queda anotado como mejora futura, no
+  inventada aquí.
+- **Enlace "Saltar al contenido" (`PROJECT_SPEC.md` §12), hueco real no
+  construido en ninguna tarea anterior**: añadido en `app.html`
+  (`.skip-link` en `styles.css`, oculto salvo con foco), apunta a
+  `#main-content` — `id`+`tabindex="-1"` nuevos en `.catalog-page__content`
+  (salta filtros y cabecera, no solo hasta `<main>`) y en el `<main>` de
+  `product-detail-page.html`.
+- **Axe ampliado a `/` y `/p/:slug`** (`e2e/accessibility.spec.ts`, caso 50
+  completo): antes solo corría con el modal abierto
+  (`product-modal.spec.ts`, W7).
+- **Casos 47 y 48 no existían, escritos en `e2e/whatsapp-flow.spec.ts`**: la
+  nota de `W10` sobre el caso 47 "escrito pero sin ejecutar" no se
+  correspondía con el repo real — no había ningún archivo con ese caso.
+  Contra el backend real y sus datos semilla (categoría "Aceites", 3
+  productos; buscar "lavanda" acota siempre a uno). Única excepción: el
+  detalle de ese producto se intercepta solo en su propia petición
+  (`/products/aceite-esencial-de-lavanda-30ml`) para añadir una segunda
+  imagen sintética a partir de la respuesta real, porque ningún producto
+  semilla tiene más de una imagen (verificado contra los 11 productos
+  reales) y "ver las fotos" necesita al menos dos — mismo criterio que el
+  caso 56 de W13. `window.open` se intercepta con `page.addInitScript`
+  (nunca deja que el navegador navegue de verdad a `wa.me`, que redirige a
+  `api.whatsapp.com` con salida a internet real — comportamiento de
+  WhatsApp, no de este repo).
+- **`prefers-reduced-motion` y `Escape` de los tres diálogos, revisados, sin
+  huecos**: `catalog-filter-mobile-panel` no tiene ninguna transición CSS
+  que proteger (la hoja aparece/desaparece con `@if`, no con `transition`);
+  `product-detail-modal`, `whatsapp-preview-dialog` y `selection-panel` ya
+  guardaban su animación de apertura con
+  `@media (prefers-reduced-motion: no-preference)`, y los tres cierran con
+  `Escape`.
+- **Umbral de cobertura global, pendiente anotado por `W8`**: "no se tocó
+  `angular.json` para exigir cobertura global — eso es alcance de W14".
+  Añadido `architect.test.options.coverageThresholds.lines: 80`
+  (`PROJECT_SPEC.md` §15) — `pnpm test` rompe si la cobertura global de
+  líneas baja del 80 %. El 100 % de `whatsapp-template.service.ts` sigue
+  verificándose aparte con el comando ad-hoc de W8 (`--coverage-include`
+  acotado a esa carpeta): forzarlo como umbral global habría exigido 100 %
+  a todo el repo, que no es el objetivo.
 
-  Se probó `HTTP_TRANSFER_CACHE_ORIGIN_MAP` (el mecanismo que Angular
-  documenta para "orígenes distintos entre servidor y cliente"), pero **no
-  cubre este caso**: solo reconcilia dos orígenes absolutos distintos. Si el
-  destino del mapeo es `''` (para igualar la URL relativa del cliente), el
-  propio código de `@angular/common/http` lo trata como *falsy* y no aplica
-  ningún mapeo (`if (!mappedOrigin) return url;` en `mapRequestOriginUrl`,
-  verificado leyendo el fuente y ejecutándolo aislado con Node).
+**El backend real estuvo disponible en esta sesión** (a diferencia de
+W3–W13, que documentan `localhost:8080` inalcanzable): se pudo verificar de
+extremo a extremo por primera vez, y aparecieron varios bugs reales que
+ninguna tarea anterior había podido ejercitar contra datos de verdad.
+Corregidos todos, sin excepción, dentro de esta tarea:
 
-  **Opciones reales para resolverlo** (pendiente decidir con el usuario cuál,
-  al llegar a esta tarea):
-  1. Cachear manualmente con `TransferState` en cada página SSR (`CatalogPage`
-     aquí; `/p/:slug` de `W6` tendría el mismo problema): el servidor guarda
-     la respuesta bajo una clave propia que no depende del origen de la URL;
-     el cliente la lee antes de llamar a la API y no pide nada si ya la
-     tiene. Funciona con cualquier combinación de URLs, pero es trabajo real
-     en más de un lugar.
-  2. Cambiar la decisión de `PROJECT_SPEC.md` §8 para que el cliente también
-     use un origen absoluto reconocible (la URL pública del sitio, por
-     ejemplo) — ahí `HTTP_TRANSFER_CACHE_ORIGIN_MAP` sí funcionaría de
-     fábrica. Contradice el texto actual del spec ("en el navegador pueden
-     ser relativas"), así que requiere aprobarlo explícitamente antes de
-     tocar `ARQUITECTURA.md`/`PROJECT_SPEC.md`.
+- **El enlace de la tarjeta era completamente inalcanzable por teclado**
+  (`product-card.css`, `.product-card__link { display: contents; }`,
+  decisión original de `W7`). `display: contents` deja al elemento sin caja
+  propia — en Chromium eso lo saca del orden de tabulación por completo:
+  `Tab` nunca llega, y `.focus()` tampoco. Se sigue exponiendo con
+  `role="link"` en el árbol de accesibilidad (por eso ningún axe anterior lo
+  detectó), pero un usuario de teclado no podía abrir ni un solo producto —
+  rompía el requisito central del caso 48 y de `PROJECT_SPEC.md` §12
+  ("todo operable solo con teclado"). Corregido reemplazando
+  `display: contents` por `display: flex; flex-direction: column;` con el
+  mismo `gap` que ya usaba `.product-card`, reproduciendo el layout exacto
+  (verificado por captura, sin cambio visual) sin dejar al enlace sin caja.
+- **El modal de detalle, el panel de selección y el diálogo de WhatsApp
+  quedaban invisibles al centrarse en escritorio** (`product-detail-modal.scss`,
+  `selection-panel.scss`, `whatsapp-preview-dialog.scss`): las tres reglas de
+  centrado en `@media (min-width: bp.$lg)` declaraban
+  `top: 50%; left: 50%; right: auto; bottom: auto;` y **después**,
+  en la misma regla, `inset: auto;` — `inset` es el atajo de las cuatro
+  propiedades juntas, así que esa línea las pisaba de vuelta a `auto` sin
+  que ninguna de las cuatro anteriores sobreviviera. Con `top`/`left: auto`
+  en `position: fixed`, el navegador cae a la posición estática del
+  elemento — verificado con `getComputedStyle` en un Chromium real: el panel
+  aparecía con `top: 1856px` (la altura del documento) en un viewport de
+  720 px, completamente fuera de pantalla. Los tres diálogos llevaban así
+  desde que se escribieron (W7, W9, W10) — invisibles para cualquiera en
+  escritorio, con ratón o teclado, no solo un problema de accesibilidad.
+  Ningún test anterior lo detectó porque ninguno comprobaba la posición real
+  en el viewport, solo el estado del DOM (`role="dialog"` presente,
+  `aria-modal`, foco atrapado). Corregido quitando la línea `inset: auto;`
+  redundante en las tres reglas (ya sobraba: `top`/`right`/`bottom`/`left`
+  ya estaban puestos uno a uno).
+- **El carrusel de imágenes rompía la semántica de lista** (axe, "serious"):
+  `<li role="group">` dentro de un `<ul>` — darle `role="group"` a un `<li>`
+  no es un rol permitido para ese elemento (regla `aria-allowed-role`) y,
+  además, deja de contar como `listitem`, así que el propio `<ul>` pasaba a
+  tener "hijos no permitidos" (regla `list`). Ninguna axe anterior lo vio
+  porque el único run con contenido real tenía el modal (y por tanto el
+  carrusel) `inert`, excluido del árbol de accesibilidad. Corregido
+  cambiando `<ul class="product-image-carousel__track">`/`<li class="...
+  slide">` a `<div>` — es el patrón real del ARIA Authoring Practices Guide
+  para carruseles (`role="group"` por diapositiva sobre contenedores
+  genéricos, nunca listas semánticas), y de paso resolvió un tercer fallo:
+  `e2e/product-modal.spec.ts` esperaba cero `role="list"` en la página
+  completa de `/p/:slug`, y el `<ul>` del carrusel (con una sola imagen en
+  el producto semilla) contaba como uno.
+- **Salto de encabezados en `/` (axe, "moderate")**: `<h1>Catálogo</h1>`
+  seguido directo de `<h3 class="product-card__name">` en cada tarjeta, sin
+  ningún `<h2>` de por medio (`heading-order`, WCAG 1.3.1). Corregido
+  bajando el nombre de producto a `<h2>` — no hay ningún `<h2>` real en el
+  resto de la página del catálogo con el que choque.
+- **El servidor de producción no comprimía nada** — el hallazgo con más
+  impacto de rendimiento de la tarea. `curl -H "Accept-Encoding: gzip"`
+  contra `pnpm serve:ssr:shop-dashboard-web` no devolvía ninguna cabecera
+  `Content-Encoding`: el bundle inicial viajaba a los ~408 KB crudos, no a
+  los ~114 KB que este ROADMAP lleva citando desde W5 como "kB
+  transferidos" — ese número siempre fue la estimación de la propia CLI de
+  Angular, nunca algo que el servidor real aplicara, y nadie lo había
+  verificado antes porque ninguna tarea anterior llegó a correr Lighthouse
+  contra el servidor de producción real. Con Lighthouse real (móvil, 4G
+  simulada, backend real) contra `/`: **Rendimiento 83, LCP 3.6 s** — por
+  debajo de los objetivos de esta misma tarea. Añadido `compression`
+  (paquete de Express, `app.use(compression())` en `src/server.ts`, antes de
+  cualquier otra ruta) — confirmado con el mismo `curl`, ahora responde
+  `Content-Encoding: br`. Con eso: **Rendimiento 99, LCP 2.0 s** en `/`, y
+  **98 / LCP 2.1 s** en `/p/:slug`.
+- **`security.allowedHosts: []` bloqueaba el servidor de producción para
+  cualquier host**, incluido `localhost` — `pnpm serve:ssr:shop-dashboard-web`
+  devolvía `400 Bad Request` ("Header host ... is not allowed") para
+  cualquier petición. Es el mismo motivo por el que nadie había podido
+  correr `pnpm lighthouse` de verdad hasta ahora (W3 y W13 lo dejaron como
+  pendiente por falta de backend, nunca por esto, pero el bloqueo estaba ahí
+  esperando). Añadido `"localhost"` a la lista.
+- **`e2e/smoke.spec.ts` comprobaba un título del scaffold de Angular CLI**
+  (`/ShopDashboardWeb/`) que no existe desde `W12`. Corregido a `/Catálogo/`.
+- **Dos tests de `e2e/responsive.spec.ts` tenían fallos latentes, invisibles
+  hasta tener datos reales** (W13 los dejó explícitamente como "pendiente de
+  correr contra el backend real"):
+  - Caso 54 a 1280 px: `getByRole('checkbox').first()` sin acotar cogía la
+    primera casilla de la página — a escritorio eso es un filtro de
+    categoría del panel lateral, no la casilla de seleccionar un producto.
+    Marcarlo refrescaba el grid entero y desprendía la tarjeta que ya se
+    había resuelto como "última", tumbando `scrollIntoViewIfNeeded()`.
+    Acotado a `getByRole('list').getByRole('checkbox').first()`.
+  - Caso 56: el mock de `products`/`categories` vía `page.route()` dejó de
+    tener efecto — con el caso 44 ya corregido, el servidor renderiza datos
+    reales y el navegador ya no vuelve a pedir el primer lote tras
+    hidratar, así que la petición mockeada nunca se dispara. Corregido
+    forzando una petición nueva desde el propio navegador (abrir el panel
+    de filtros móvil y buscar), que sí golpea el mock porque es una
+    combinación de parámetros que el servidor nunca renderizó.
+
+**Verificado de extremo a extremo con el backend real** (`shop-backend-service`,
+11 productos publicados en 5 categorías): `pnpm lint && pnpm test && pnpm build`
+en verde (266 tests, cobertura 86.27 % líneas; bundle inicial 113.79 kB
+transferidos). Los 26 tests de `pnpm e2e` pasan contra el backend real,
+incluidos los casos 44, 47, 48 y 50 nuevos. Lighthouse real (móvil, 4G
+simulada) en `/`: Rendimiento 99, Accesibilidad 100, Buenas prácticas 96,
+SEO 100, LCP 2.0 s, CLS 0. En `/p/aceite-esencial-de-lavanda-30ml`:
+Rendimiento 98, Accesibilidad 100, Buenas prácticas 96, SEO 100, LCP 2.1 s,
+CLS 0 — los cuatro objetivos de Lighthouse y los dos de LCP/CLS, cumplidos
+en las dos rutas. INP no se midió como métrica de campo real (necesita
+interacción de usuario real, no una carga de página); el proxy de
+laboratorio más cercano, Total Blocking Time, quedó en 10-14 ms en ambas
+páginas, muy por debajo de cualquier umbral de riesgo.
 
 ---
 

@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   PLATFORM_ID,
+  TransferState,
   computed,
   effect,
   inject,
@@ -19,6 +20,7 @@ import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
 import { SITE_URL } from '../../../core/config/site-url.token';
 import { WHATSAPP_SETTINGS } from '../../../core/config/whatsapp-settings.token';
 import { SeoService } from '../../../core/seo/seo.service';
+import { cacheFirstValue } from '../../../core/http/transfer-state-cache';
 import { buildBreadcrumbJsonLd, buildItemListJsonLd } from '../../../core/seo/seo.schema';
 import { ProductDetailModal } from '../../product/product-detail-modal/product-detail-modal';
 import { SelectionService } from '../../selection/selection.service';
@@ -62,6 +64,7 @@ export class CatalogPage {
   private readonly seo = inject(SeoService);
   private readonly siteUrl = inject(SITE_URL);
   private readonly storeName = inject(WHATSAPP_SETTINGS).storeName;
+  private readonly transferState = inject(TransferState);
 
   protected readonly openSlug = signal<string | null>(null);
   protected readonly modalOrigin = signal<HTMLElement | null>(null);
@@ -129,14 +132,35 @@ export class CatalogPage {
     return params;
   });
 
+  /**
+   * `cacheFirstValue` evita el caso 44 (el primer lote se pedía dos veces,
+   * servidor + hidratación — `HttpTransferCache` no basta porque la clave
+   * que usa es la URL completa, y esa URL es absoluta en servidor y
+   * relativa en navegador). La clave depende de `requestParams`, así que
+   * solo la primera petición (misma forma en los dos lados) usa la caché;
+   * un lote posterior con una página distinta simplemente no encuentra
+   * clave y pide normal.
+   */
   private readonly pageResource = rxResource({
     params: this.requestParams,
-    stream: ({ params }) => this.publicCatalogController.listProducts(params),
+    stream: ({ params }) =>
+      cacheFirstValue(
+        this.transferState,
+        isPlatformBrowser(this.platformId),
+        `catalog-products:${JSON.stringify(params)}`,
+        this.publicCatalogController.listProducts(params),
+      ),
   });
 
   /** Sin `params`: no depende de nada reactivo, se pide una sola vez (también en SSR, igual que `pageResource`). */
   private readonly categoriesResource = rxResource({
-    stream: () => this.publicCatalogController.listCategories(),
+    stream: () =>
+      cacheFirstValue(
+        this.transferState,
+        isPlatformBrowser(this.platformId),
+        'catalog-categories',
+        this.publicCatalogController.listCategories(),
+      ),
   });
 
   protected readonly categories = computed(() => this.categoriesResource.value() ?? []);

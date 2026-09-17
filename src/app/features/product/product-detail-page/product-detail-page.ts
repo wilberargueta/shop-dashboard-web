@@ -1,4 +1,16 @@
-import { Component, DestroyRef, RESPONSE_INIT, computed, effect, inject, input, untracked } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  Component,
+  DestroyRef,
+  PLATFORM_ID,
+  RESPONSE_INIT,
+  TransferState,
+  computed,
+  effect,
+  inject,
+  input,
+  untracked,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { PublicCatalogControllerService } from '../../../api/api/public-catalog-controller.service';
@@ -6,6 +18,7 @@ import { ProductDetail } from '../../../api/model/product-detail';
 import { WHATSAPP_SETTINGS } from '../../../core/config/whatsapp-settings.token';
 import { SITE_URL } from '../../../core/config/site-url.token';
 import { ApiError } from '../../../core/http/problem-detail.model';
+import { cacheFirstValue } from '../../../core/http/transfer-state-cache';
 import { SeoService } from '../../../core/seo/seo.service';
 import { buildProductJsonLd, resolveAbsoluteDetailImage } from '../../../core/seo/seo.schema';
 import { ProductDetailSkeleton } from '../../../shared/product-detail-skeleton/product-detail-skeleton';
@@ -61,10 +74,18 @@ export class ProductDetailPage {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly selection = inject(SelectionService);
   private readonly whatsappPreview = inject(WhatsAppPreviewService);
+  private readonly transferState = inject(TransferState);
+  private readonly platformId = inject(PLATFORM_ID);
 
   private readonly productResource = rxResource({
     params: this.slug,
-    stream: ({ params }) => this.publicCatalogController.getProduct({ slug: params }),
+    stream: ({ params }) =>
+      cacheFirstValue(
+        this.transferState,
+        isPlatformBrowser(this.platformId),
+        `product-detail:${params}`,
+        this.publicCatalogController.getProduct({ slug: params }),
+      ),
   });
 
   protected readonly isLoading = computed(() => this.productResource.isLoading());

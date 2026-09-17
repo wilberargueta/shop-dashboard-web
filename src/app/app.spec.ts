@@ -52,6 +52,13 @@ describe('App', () => {
     expect(container.hasAttribute('ng-version')).toBe(true);
   });
 
+  it('renders a skip-to-content link pointing at #main-content (PROJECT_SPEC.md §12)', async () => {
+    const { getByRole } = await renderApp();
+
+    const skipLink = getByRole('link', { name: 'Saltar al contenido' });
+    expect(skipLink.getAttribute('href')).toBe('#main-content');
+  });
+
   it('makes the router outlet inert while the WhatsApp preview dialog is open', async () => {
     const { container, fixture } = await renderApp();
     const outletWrapper = container.querySelector('div');

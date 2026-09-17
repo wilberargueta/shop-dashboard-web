@@ -51,6 +51,7 @@ __screenshots__/
 
 # Lighthouse
 /lighthouse-report.html
+/lighthouse-report-product.html
 
 # System files
 .DS_Store
