@@ -20,7 +20,10 @@
       />
     </aside>
 
-    <div class="catalog-page__content">
+    <div
+      class="catalog-page__content"
+      [class.catalog-page__content--bar-visible]="selectionBarVisible()"
+    >
       @if (isEmpty()) {
         <div class="catalog-page__empty">
           <p i18n="@@catalogPage.emptyMessage">No hay productos que coincidan con estos filtros.</p>

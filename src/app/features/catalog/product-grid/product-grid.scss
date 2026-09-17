@@ -1,3 +1,5 @@
+@use '../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
@@ -13,7 +15,7 @@
   margin-inline: auto;
 }
 
-@media (min-width: 768px) {
+@media (min-width: bp.$md) {
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
     max-width: none;
@@ -21,7 +23,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$lg) {
   .product-grid {
     grid-template-columns: repeat(3, 1fr);
   }

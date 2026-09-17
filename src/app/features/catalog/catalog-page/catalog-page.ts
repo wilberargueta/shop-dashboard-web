@@ -49,7 +49,7 @@ const DETAIL_PATH_PREFIX = '/p/';
   selector: 'app-catalog-page',
   imports: [ProductGrid, CatalogLoadMore, CatalogFilterPanel, CatalogFilterMobilePanel, ProductDetailModal],
   templateUrl: './catalog-page.html',
-  styleUrl: './catalog-page.css',
+  styleUrl: './catalog-page.scss',
 })
 export class CatalogPage {
   private readonly platformId = inject(PLATFORM_ID);
@@ -163,6 +163,12 @@ export class CatalogPage {
     () => new Set(this.selection.lines().map((line) => line.productId)),
   );
   protected readonly selectionCapReached = this.selection.capReached;
+
+  /**
+   * Ancla responsive (ROADMAP.md W9/W13, caso 54): la barra de selección es
+   * fija abajo y taparía el último producto sin este relleno compensatorio.
+   */
+  protected readonly selectionBarVisible = computed(() => this.selection.count() > 0);
 
   constructor() {
     // Título/descripción/canonical/OG/BreadcrumbList no dependen de datos ni

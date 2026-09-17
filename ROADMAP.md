@@ -1159,7 +1159,7 @@ para fechas, números y moneda. `<html lang="es">`.
 
 ---
 
-### [ ] W13. Diseño responsive
+### [x] W13. Diseño responsive
 
 Repaso completo contra `PROJECT_SPEC.md` §11. Puntos de corte declarados una
 sola vez como variables CSS, con la escala de `docs/ARQUITECTURA.md` §8.
@@ -1178,6 +1178,96 @@ veces.
   último producto.
 - Ninguna imagen con `srcset` se queda sin `sizes`.
 - Nada de `100vh` en elementos que deban ocupar la altura visible en móvil.
+
+**Desviaciones:**
+- **Adoptado Sass, decisión tomada con el usuario**: las CSS custom
+  properties no se pueden interpolar dentro de la condición de un `@media`
+  — limitación real de la especificación CSS, no de este repo (confirmado
+  reventando `sass.compile()` en aislado antes de tocar nada). Sin esto, "los
+  breakpoints como variables CSS" solo podía ser un comentario documental, no
+  algo ejecutable. Se añadió `sass` como devDependency (soportado de fábrica
+  por `@angular/build`, sin plugins ni config de builder adicional) y un
+  nuevo parcial `src/styles/_breakpoints.scss` con `$xs/$sm/$md/$lg/$xl/$xxl`
+  (escala de `ARQUITECTURA.md` §8). Solo se convirtieron a `.scss` los 9
+  archivos que ya declaraban un `@media` de ancho — el resto se queda en
+  `.css`, no ganan nada del parcial. `stylePreprocessorOptions.includePaths`
+  en `angular.json` no resuelve `@use` en el compilador Sass que usa
+  `@angular/build` (solo afecta a `@import`, verificado reproduciendo el
+  error con `sass.compile()` directo) — cada archivo `.scss` importa el
+  parcial con una ruta relativa (`@use '../../../../styles/breakpoints' as
+  bp;`), no con el nombre corto.
+- **Constante TS paralela** (`src/app/shared/breakpoints.ts`), mismos seis
+  valores en número: `ProductCard.imageSizes`
+  ([product-card.ts](src/app/features/catalog/product-card/product-card.ts))
+  los necesitaba en JavaScript (el `sizes` del `<picture>` debe coincidir con
+  las columnas reales del grid, W3), y antes eran literales `1024`/`768`
+  repetidos por separado del CSS — con esto hay un solo sitio que puede
+  desalinearlos si cambian las columnas.
+- **Panel de filtros con los tres tratamientos de `PROJECT_SPEC.md` §11**,
+  no solo el binario que dejó W5: `catalog-filter-mobile-panel.scss` ahora
+  parte de una hoja que sube desde abajo (móvil, `<768px`, `max-height:
+  min(85dvh, 40rem)`, esquinas superiores redondeadas) y la convierte en el
+  drawer lateral que ya existía (`768–1023px`) solo desde `bp.$md`; desde
+  `bp.$lg` sigue ocultándose porque la columna fija de `catalog-page.scss`
+  toma el relevo (sin cambios ahí). Mismo componente, mismo `FocusTrap`,
+  mismo `@defer (on interaction(trigger))` — solo CSS.
+- **`--selection-bar-height` es una estimación fija (`4.5rem`), no una altura
+  medida de verdad**: `SelectionBar` puede envolver a dos líneas si el
+  contenido no cabe (`flex-wrap: wrap`), así que un `padding-bottom` basado
+  en un número fijo es, en el peor caso, insuficiente — el propio
+  `PROJECT_SPEC.md` §11 habla de "unos 64 px" en el mismo tono aproximado.
+  Se declaró como variable única en `src/styles.css`, consumida tanto por
+  `selection-bar.scss` (`min-height`) como por la nueva regla
+  `.catalog-page__content--bar-visible` en `catalog-page.scss`, para que al
+  menos ambos lados no puedan desalinearse entre sí. Medirla de verdad con
+  `ResizeObserver` queda fuera de alcance — no lo pide el criterio de
+  aceptación, que solo exige el `padding-bottom`.
+- **Áreas táctiles**: se añadió `min-width: 44px` explícito (antes solo
+  `min-height`) a `selection-bar__view`/`__send`,
+  `whatsapp-preview-dialog__copy`/`__send`, `catalog-filter-panel__clear`,
+  `catalog-page__empty-clear`, `selection-panel__send` y
+  `product-detail-content__add-button`/`__whatsapp-button`. Los checkboxes
+  nativos de categoría/ofertas (`catalog-filter-panel.html`) siguen midiendo
+  20×20 a propósito — el objetivo táctil real es el `<label>` que envuelve
+  toda la fila (`min-height: 44px`, ancho completo), un patrón ya aceptado
+  desde W5. El test de Playwright del caso 55 mide el `<label>`, no el
+  `<input>`, por la misma razón.
+- **Caso 56 mockeado con `page.route()`, desviación deliberada del patrón
+  "siempre contra el backend real" de los specs e2e de este repo**: es una
+  aserción puramente de CSS/renderizado (un nombre de 120 caracteres sin
+  espacios no desborda la tarjeta), y no hay forma de garantizar que los
+  datos semilla tengan un producto con un nombre así de largo. Se
+  interceptan `**/api/public/v1/products*` y `**/api/public/v1/categories*`
+  para servir un único producto de prueba. **Verificado de verdad en este
+  entorno** (sin backend disponible, justo porque no lo necesita): el test
+  pasa, confirmando que `overflow-wrap: anywhere` +
+  `-webkit-line-clamp: 2` en `.product-card__name`
+  ([product-card.css](src/app/features/catalog/product-card/product-card.css))
+  contiene el nombre sin desbordar la tarjeta ni producir scroll horizontal
+  a 320 px.
+- **Caso 57 (zoom 200% a 1280px) implementado como viewport de 640px**:
+  Playwright no tiene una API que simule el zoom de la interfaz del
+  navegador; la técnica reconocida para esto es reducir a la mitad el
+  viewport CSS efectivo, que es exactamente lo que produce un zoom al 200%
+  desde el punto de vista de los `@media` de ancho. **Verificado de verdad
+  en este entorno** (no depende de datos reales, solo de que el grid exista):
+  pasa sin scroll horizontal.
+
+**Pendiente — verificación de extremo a extremo con el backend real, mismo
+motivo que W3/W5/W6/W7/W9/W10/W11/W12:**
+- Los casos 51, 52, 53, 54, 55 y 58 necesitan un producto real para navegar
+  al detalle o para seleccionar una tarjeta — sin backend, `getByRole('main').getByRole('link').first()`
+  no encuentra ningún enlace (confirmado: los tests fallan por timeout
+  esperando ese link, no por ningún assert en rojo) y quedan pendientes de
+  correr contra `shop-backend-service` levantado. Los casos 56 y 57 sí se
+  ejecutaron y pasan en este entorno (ver arriba).
+- `pnpm lighthouse` (Rendimiento/CLS con el nuevo CSS) también necesita el
+  backend real — mismo bloqueo que W3/W11.
+- `pnpm lint && pnpm test && pnpm build` en verde (261 tests unitarios/de
+  componente; bundle inicial 116.25 kB transferidos, dentro del presupuesto
+  de 200 KB). `pnpm start` + `curl` sobre `/` confirma HTML 200 sin la clase
+  `catalog-page__content--bar-visible` aplicada (selección vacía en
+  servidor, correcto) y sin que el SSR reviente tras el cambio a Sass.
 
 ---
 

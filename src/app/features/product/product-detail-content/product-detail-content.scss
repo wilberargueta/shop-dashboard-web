@@ -1,3 +1,5 @@
+@use '../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
@@ -58,6 +60,7 @@
 .product-detail-content__add-button {
   align-self: flex-start;
   min-height: 44px;
+  min-width: 44px;
   padding: 0 var(--space-4);
   border: none;
   border-radius: var(--radius-sm);
@@ -74,6 +77,7 @@
 .product-detail-content__whatsapp-button {
   align-self: flex-start;
   min-height: 44px;
+  min-width: 44px;
   padding: 0 var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -87,7 +91,7 @@
   cursor: not-allowed;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$lg) {
   .product-detail-content {
     flex-direction: row;
     align-items: flex-start;

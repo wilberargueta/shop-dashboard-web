@@ -1,3 +1,5 @@
+@use '../../../../styles/breakpoints' as bp;
+
 :host {
   display: contents;
 }
@@ -40,7 +42,7 @@
   padding: var(--space-5) 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: bp.$md) {
   .product-detail-modal__panel {
     inset: var(--space-6);
     border-radius: var(--radius-md);
@@ -48,7 +50,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$lg) {
   .product-detail-modal__panel {
     top: 50%;
     left: 50%;

@@ -1,3 +1,5 @@
+@use '../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
@@ -106,7 +108,7 @@
   display: none;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$lg) {
   .product-image-carousel__dots {
     display: none;
   }

@@ -28,6 +28,12 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
 
+  /* Estimación del alto de selection-bar.css (contenido de una línea, ~64px
+     según PROJECT_SPEC.md §11). La usan tanto la barra como el relleno
+     inferior que la compensa en el grid — un solo número, no dos que puedan
+     desalinearse. */
+  --selection-bar-height: 4.5rem;
+
   color-scheme: light;
 }
 

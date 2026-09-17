@@ -1,15 +1,17 @@
+@use '../../../../styles/breakpoints' as bp;
+
 :host {
   display: contents;
 }
 
-.whatsapp-preview-dialog__backdrop {
+.selection-panel__backdrop {
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 55%);
   z-index: 40;
 }
 
-.whatsapp-preview-dialog__panel {
+.selection-panel__panel {
   position: fixed;
   inset: 0;
   z-index: 41;
@@ -25,13 +27,13 @@
   padding-right: max(var(--space-4), env(safe-area-inset-right));
 }
 
-.whatsapp-preview-dialog__header {
+.selection-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.whatsapp-preview-dialog__close {
+.selection-panel__close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -44,37 +46,62 @@
   font-size: var(--font-size-lg);
 }
 
-.whatsapp-preview-dialog__message {
-  flex: 1 1 auto;
+.selection-panel__list {
+  list-style: none;
   margin: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  white-space: pre-wrap;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.selection-panel__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.selection-panel__name {
+  flex: 1 1 100%;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.whatsapp-preview-dialog__footer {
+.selection-panel__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-discount);
+  font-size: var(--font-size-lg);
+}
+
+.selection-panel__footer {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
 }
 
-.whatsapp-preview-dialog__copy {
-  min-height: 44px;
-  padding: 0 var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
+.selection-panel__total {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--font-size-lg);
 }
 
-.whatsapp-preview-dialog__send {
+.selection-panel__send {
   min-height: 44px;
+  min-width: 44px;
   padding: 0 var(--space-4);
   border: none;
   border-radius: var(--radius-sm);
@@ -82,16 +109,16 @@
   color: var(--color-primary-contrast);
 }
 
-@media (min-width: 768px) {
-  .whatsapp-preview-dialog__panel {
+@media (min-width: bp.$md) {
+  .selection-panel__panel {
     inset: var(--space-6);
     border-radius: var(--radius-md);
     box-shadow: 0 8px 32px rgb(0 0 0 / 25%);
   }
 }
 
-@media (min-width: 1024px) {
-  .whatsapp-preview-dialog__panel {
+@media (min-width: bp.$lg) {
+  .selection-panel__panel {
     top: 50%;
     left: 50%;
     right: auto;
@@ -105,12 +132,12 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .whatsapp-preview-dialog__panel {
-    animation: whatsapp-preview-dialog-in 150ms ease-out;
+  .selection-panel__panel {
+    animation: selection-panel-in 150ms ease-out;
   }
 }
 
-@keyframes whatsapp-preview-dialog-in {
+@keyframes selection-panel-in {
   from {
     opacity: 0;
   }

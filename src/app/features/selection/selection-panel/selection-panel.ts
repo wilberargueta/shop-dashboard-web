@@ -16,7 +16,7 @@ import { SelectionLine } from '../selection.model';
   selector: 'app-selection-panel',
   imports: [CurrencyPipe, ProductPrice, QuantityStepper, FocusTrap],
   templateUrl: './selection-panel.html',
-  styleUrl: './selection-panel.css',
+  styleUrl: './selection-panel.scss',
 })
 export class SelectionPanel {
   readonly lines = input.required<readonly SelectionLine[]>();

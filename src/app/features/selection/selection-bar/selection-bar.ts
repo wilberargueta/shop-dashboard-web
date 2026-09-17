@@ -11,7 +11,7 @@ import { Component, input, output } from '@angular/core';
   selector: 'app-selection-bar',
   imports: [CurrencyPipe],
   templateUrl: './selection-bar.html',
-  styleUrl: './selection-bar.css',
+  styleUrl: './selection-bar.scss',
 })
 export class SelectionBar {
   readonly count = input.required<number>();

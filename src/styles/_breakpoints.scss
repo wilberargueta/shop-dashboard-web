@@ -1,0 +1,9 @@
+// Escala de puntos de corte de docs/ARQUITECTURA.md §8 — única fuente de
+// verdad para los `@media` de ancho. No dupliques estos valores como
+// literales; usa `@use '.../styles/breakpoints' as bp;` y `bp.$md`, etc.
+$xs: 0;
+$sm: 480px;
+$md: 768px;
+$lg: 1024px;
+$xl: 1280px;
+$xxl: 1536px;

@@ -16,7 +16,7 @@ import { WhatsAppTemplateService } from '../../whatsapp-template/whatsapp-templa
   selector: 'app-whatsapp-preview-dialog',
   imports: [FocusTrap],
   templateUrl: './whatsapp-preview-dialog.html',
-  styleUrl: './whatsapp-preview-dialog.css',
+  styleUrl: './whatsapp-preview-dialog.scss',
 })
 export class WhatsAppPreviewDialog {
   readonly lines = input.required<readonly WhatsAppSelectionLine[]>();

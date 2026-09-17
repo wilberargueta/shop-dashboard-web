@@ -10,7 +10,7 @@ const TRAILING_SKELETON_COUNT = 3;
   selector: 'app-product-grid',
   imports: [ProductCard, SkeletonCard],
   templateUrl: './product-grid.html',
-  styleUrl: './product-grid.css',
+  styleUrl: './product-grid.scss',
 })
 export class ProductGrid {
   readonly products = input<readonly ProductCardDto[]>([]);

@@ -17,7 +17,7 @@ import { countActiveFilters } from '../catalog-query.util';
   selector: 'app-catalog-filter-mobile-panel',
   imports: [CatalogFilterPanel, FocusTrap],
   templateUrl: './catalog-filter-mobile-panel.html',
-  styleUrl: './catalog-filter-mobile-panel.css',
+  styleUrl: './catalog-filter-mobile-panel.scss',
 })
 export class CatalogFilterMobilePanel {
   readonly filters = input.required<CatalogFilters>();

@@ -456,6 +456,26 @@ describe('CatalogPage', () => {
 
       expect(checkbox.getAttribute('aria-checked')).toBe('true');
     });
+
+    it('case 54: applies the bottom-padding class to the grid container while the selection bar is visible', async () => {
+      listProducts.mockReturnValue(of(buildResponse(0, 2, false)));
+      const harness = await createHarness();
+      await harness.fixture.whenStable();
+
+      const content = harness.routeNativeElement?.querySelector('.catalog-page__content') as HTMLElement;
+      expect(content.classList.contains('catalog-page__content--bar-visible')).toBe(false);
+
+      const checkbox = harness.routeNativeElement?.querySelectorAll('[role="checkbox"]')[0] as HTMLButtonElement;
+      fireEvent.click(checkbox);
+      await harness.fixture.whenStable();
+
+      expect(content.classList.contains('catalog-page__content--bar-visible')).toBe(true);
+
+      fireEvent.click(checkbox);
+      await harness.fixture.whenStable();
+
+      expect(content.classList.contains('catalog-page__content--bar-visible')).toBe(false);
+    });
   });
 
   describe('WhatsApp individual (W10)', () => {

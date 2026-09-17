@@ -24,7 +24,7 @@ import {
   selector: 'app-product-detail-modal',
   imports: [ProductDetailContent, ProductDetailSkeleton, FocusTrap],
   templateUrl: './product-detail-modal.html',
-  styleUrl: './product-detail-modal.css',
+  styleUrl: './product-detail-modal.scss',
 })
 export class ProductDetailModal {
   readonly slug = input.required<string>();

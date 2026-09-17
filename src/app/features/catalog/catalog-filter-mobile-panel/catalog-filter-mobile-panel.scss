@@ -1,3 +1,5 @@
+@use '../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
@@ -38,24 +40,46 @@
   z-index: 20;
 }
 
+/**
+ * Ancla responsive (PROJECT_SPEC.md §11): móvil (<md) es una hoja que sube
+ * desde abajo; tableta (md–lg) es el panel lateral que antes era el único
+ * tratamiento; escritorio (>=lg) oculta esto por completo (columna fija en
+ * catalog-page.scss).
+ */
 .catalog-filter-mobile-panel__panel {
   position: fixed;
-  top: 0;
-  right: 0;
+  inset-inline: 0;
+  top: auto;
   bottom: 0;
   z-index: 21;
-  width: min(90vw, 22rem);
-  height: 100dvh;
+  max-height: min(85dvh, 40rem);
   overflow-y: auto;
   background: var(--color-surface);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
   padding: var(--space-4);
   padding-top: max(var(--space-4), env(safe-area-inset-top));
   padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  padding-left: max(var(--space-4), env(safe-area-inset-left));
   padding-right: max(var(--space-4), env(safe-area-inset-right));
-  box-shadow: -4px 0 16px rgb(0 0 0 / 15%);
+  box-shadow: 0 -4px 16px rgb(0 0 0 / 15%);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$md) {
+  .catalog-filter-mobile-panel__panel {
+    top: 0;
+    left: auto;
+    right: 0;
+    bottom: 0;
+    width: min(90vw, 22rem);
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: -4px 0 16px rgb(0 0 0 / 15%);
+  }
+}
+
+@media (min-width: bp.$lg) {
   .catalog-filter-mobile-panel__trigger,
   .catalog-filter-mobile-panel__backdrop,
   .catalog-filter-mobile-panel__panel {

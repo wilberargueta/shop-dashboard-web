@@ -27,7 +27,7 @@ let nextInstanceId = 0;
 @Component({
   selector: 'app-product-image-carousel',
   templateUrl: './product-image-carousel.html',
-  styleUrl: './product-image-carousel.css',
+  styleUrl: './product-image-carousel.scss',
 })
 export class ProductImageCarousel {
   readonly images = input.required<readonly ImageDetailRef[]>();

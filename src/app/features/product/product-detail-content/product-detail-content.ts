@@ -24,7 +24,7 @@ export interface WhatsAppRequestedEvent {
   selector: 'app-product-detail-content',
   imports: [ProductImageCarousel, ProductPrice, QuantityStepper],
   templateUrl: './product-detail-content.html',
-  styleUrl: './product-detail-content.css',
+  styleUrl: './product-detail-content.scss',
 })
 export class ProductDetailContent {
   readonly product = input.required<ProductDetail>();

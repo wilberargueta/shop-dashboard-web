@@ -1,6 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { ProductCard as ProductCardDto } from '../../../api/model/product-card';
 import { ProductPrice } from '../../../shared/product-price/product-price';
+import { BREAKPOINTS } from '../../../shared/breakpoints';
 
 export interface ProductCardOpenEvent {
   slug: string;
@@ -45,8 +46,15 @@ export class ProductCard {
     this.open.emit({ slug, origin: event.currentTarget as HTMLAnchorElement });
   }
 
-  /** Ver el ejemplo de <picture> en PROJECT_SPEC.md §5; debe coincidir con las columnas reales del grid. */
-  protected readonly imageSizes = '(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw';
+  /**
+   * Ver el ejemplo de <picture> en PROJECT_SPEC.md §5; debe coincidir con las
+   * columnas reales del grid (product-grid.scss), que usa los mismos
+   * breakpoints de `BREAKPOINTS` (src/app/shared/breakpoints.ts).
+   */
+  protected readonly imageSizes =
+    `(min-width: ${BREAKPOINTS.lg}px) 33vw, ` +
+    `(min-width: ${BREAKPOINTS.md}px) 50vw, ` +
+    `100vw`;
 
   protected readonly cardSrcsetWebp = computed(() => {
     const image = this.cardImage();
