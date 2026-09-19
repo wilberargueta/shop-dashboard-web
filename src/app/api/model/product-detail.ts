@@ -1,5 +1,5 @@
 /**
- * OpenAPI definition
+ * shop-backend-service
  *
  * 
  *
@@ -18,7 +18,13 @@ export interface ProductDetail {
     name?: string;
     slug?: string;
     shortDescription?: string;
+    /**
+     * Precio de lista.
+     */
     price?: number;
+    /**
+     * Precio tras aplicar el descuento vigente, si lo hay.
+     */
     effectivePrice?: number;
     onSale?: boolean;
     discountPercentage?: number;
@@ -26,8 +32,14 @@ export interface ProductDetail {
     inStock?: boolean;
     category?: CategoryRef;
     primaryImage?: ImageRef;
+    /**
+     * HTML saneado con lista blanca (CLAUDE.md).
+     */
     description?: string;
     usageInstructions?: string;
+    /**
+     * Todas las imágenes del producto, en la versión `detail`.
+     */
     images?: Array<ImageDetailRef>;
 }
 

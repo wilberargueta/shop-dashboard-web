@@ -61,7 +61,7 @@ Configurar Vitest (o el runner del CLI), Angular Testing Library y Playwright.
 
 ---
 
-### [ ] W1. Cliente de API generado
+### [x] W1. Cliente de API generado
 
 Script `pnpm api:generate` que descarga el `openapi.json` del backend y genera
 `src/app/api/`. Fijar la versión del generador en `package.json`.
@@ -80,13 +80,21 @@ de la aplicación.
   `PublicSettings`.
 
 **Desviaciones:**
-- **`PublicSettings` no se generó**: `GET /api/public/v1/settings` todavía no
-  existe en el backend — es la tarea `B11` de `shop-backend-service`, que va después
-  de identidad/admin/imágenes y no está hecha (verificado contra el backend
-  real corriendo en `localhost:8080`, commit `d2ffbcc`, con `B0`-`B4` aplicados).
-  Por `CLAUDE.md` ("Falta un campo en la API → dilo; el cambio es en el
-  backend"), no se ha inventado el tipo a mano. `pnpm api:generate` lo traerá
-  solo en cuanto `B11` exista; no hace falta volver a tocar este repo.
+- **`PublicSettings` no se generó — resuelto en la sesión de `W15`**:
+  `GET /api/public/v1/settings` no existía en el backend cuando se hizo esta
+  tarea (`B11` de `shop-backend-service`, entonces sin hacer). Por
+  `CLAUDE.md` ("Falta un campo en la API → dilo; el cambio es en el
+  backend"), no se inventó el tipo a mano; se dejó documentado que
+  `pnpm api:generate` lo traería solo en cuanto `B11` existiera. Al
+  regenerar el cliente durante `W15` (motivado por `card2x`, ver `W3.1`),
+  `B11` ya estaba hecho: `GET /api/public/v1/settings` responde `200` con
+  `store.name`, las plantillas de WhatsApp, `catalog.max_selection`, etc., y
+  `PublicSettings` (`public-settings-response.ts`) ya existe en el cliente
+  generado. **Consumirlo** en `WhatsAppTemplateService` (W8),
+  `catalog.max_selection` (W9) o `seo.default_og_image_id` (W11) — hoy
+  siguen recibiendo esos valores como parámetros propios, no desde la API —
+  es trabajo nuevo, fuera del alcance de "que el tipo exista" que pedía esta
+  tarea; queda para una tarea futura si se decide hacerlo.
 - El `429`/`Retry-After` del interceptor está cubierto con tests unitarios
   (`HttpTestingController`, respuesta simulada) porque el backend tampoco
   tiene límite de peticiones todavía (`B12`, sin hacer) y hoy no puede producir
@@ -164,7 +172,7 @@ inventado o un `minPrice` no numérico se ignoran, no rompen la página.
 
 ## Fase 1 — Catálogo
 
-### [ ] W3. Tarjeta de producto y grid
+### [x] W3. Tarjeta de producto y grid
 
 Componente `ProductCard` con imagen (`<picture>` + WebP + `srcset` +
 `aspect-ratio` + dimensiones), nombre, precio con descuento, insignia de
@@ -260,22 +268,25 @@ el resto.
   primer lote no se pida dos veces) queda pendiente de hacer con el backend
   de `shop-backend-service` levantado, tal como pide el criterio de aceptación.
 
-**Pendiente — CLS sigue sin medirse, no marcar `[x]` hasta resolver esto:**
-- Se añadió `pnpm lighthouse` (antes solo documentado en `CLAUDE.md`, nunca
-  implementado) y se confirmó `pnpm lint && pnpm test && pnpm build` en
-  verde (76 tests, sin errores de lint, bundle inicial 94.43 kB transferido —
-  dentro del presupuesto de 200 KB). Pero al intentar medir CLS de verdad,
-  `localhost:8080` no respondió (`Connection refused`, confirmado también
-  sin el aislamiento de red del entorno de ejecución, no es un problema de
-  sandbox): el backend real no estaba arriba en este entorno pese a lo
-  indicado. No se inventó un número de CLS. Falta repetir `pnpm build` →
-  `pnpm serve:ssr:shop-dashboard-web` → `pnpm lighthouse` con el backend de
-  verdad accesible, leer el CLS de `lighthouse-report.html`, y solo entonces
-  marcar esta tarea `[x]` (o documentar la causa si el número no es bueno).
+**Resuelto en la sesión de W15 — CLS medido de verdad:**
+- Con el backend real levantado y el catálogo sembrado (`W15`),
+  `pnpm build` → `pnpm serve:ssr:shop-dashboard-web` → `pnpm lighthouse`
+  contra `/` dio **CLS = 0** (objetivo `PROJECT_SPEC.md` §10: < 0.1),
+  Rendimiento 98 (objetivo ≥ 90), Accesibilidad 100 (objetivo ≥ 95), SEO 100
+  (objetivo 100), LCP 2.1 s (objetivo < 2.5 s). Los cuatro objetivos de la
+  tabla de §10 se cumplen con margen.
+- **Hallazgo de entorno, no de código**: `lighthouse` intentaba lanzar el
+  Chrome de Windows a través de la interoperabilidad de WSL2
+  (`/mnt/c/Users/.../chrome.exe`), que no expone su puerto de DevTools al
+  lado Linux (`ECONNREFUSED`). Se apuntó `CHROME_PATH` al Chromium Linux que
+  ya trae `@playwright/test`
+  (`~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome`) para la
+  medición real; no requiere ningún cambio en el repo, solo en cómo se
+  invoca `pnpm lighthouse` en este tipo de entorno.
 
 ---
 
-### [ ] W3.1. `srcset` con `card2x` (pendiente del backend)
+### [x] W3.1. `srcset` con `card2x` (pendiente del backend)
 
 `ImageRef` (`src/app/api/model/image-ref.ts`) solo expone hoy `thumb` y
 `card` — `card2x` no existe en el cliente generado porque el backend
@@ -290,6 +301,25 @@ ancla de `sizes` con el único candidato disponible (`card`, 600w).
   correcto desde W3).
 - Test actualizado en `product-card.spec.ts` verificando ambos candidatos en
   el `srcset`.
+
+**Resuelto en la sesión de W15:**
+- `B9`/`B10` ya estaban hechos en el backend — se descubrió al subir una
+  imagen de prueba para el catálogo de e2e de `W15` y ver `card2x` en la
+  respuesta real, sin que nada lo hubiera anunciado en este repo. Se corrió
+  `pnpm api:generate` contra el backend real: además de `card2x`, el cliente
+  generado trajo bastantes más endpoints/modelos de administración que el
+  backend fue acumulando desde `W1` (usuarios, roles, auditoría, vista previa
+  de WhatsApp, etc.) — esperado, es el mismo cliente completo del OpenAPI
+  regenerado de punta a punta, y este repo sigue sin llamar a ninguno de
+  ellos.
+- `cardSrcsetWebp`/`cardSrcsetFallback` en `product-card.ts` ahora arman el
+  `srcset` a partir de una lista de candidatos (`card`, `card2x`) filtrando
+  los que falten, en vez de un único valor — `card2x` es opcional y no todos
+  los productos lo tendrán de inmediato. `sizes` no se tocó.
+- Verificado tanto con un test nuevo en `product-card.spec.ts` como contra
+  el HTML real servido por `pnpm start`: el `<source>`/`<img>` del producto
+  de lavanda (con imagen subida en `W15`) trae
+  `".../card.webp 600w, .../card2x.webp 1200w"` en el `srcset`.
 
 ---
 

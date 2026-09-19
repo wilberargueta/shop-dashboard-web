@@ -119,6 +119,28 @@ describe('ProductCard', () => {
     expect(img?.getAttribute('alt')).toBe('Frasco de aceite de lavanda');
   });
 
+  it('adds the card2x candidate to the srcset when the backend provides it (W3.1)', async () => {
+    const { container } = await render(ProductCard, {
+      inputs: {
+        product: buildProduct({
+          primaryImage: {
+            altText: 'Frasco de aceite de lavanda',
+            card: { webp: '/media/p1/card.webp', jpeg: '/media/p1/card.jpg', width: 600, height: 600 },
+            card2x: { webp: '/media/p1/card2x.webp', jpeg: '/media/p1/card2x.jpg', width: 1200, height: 1200 },
+          },
+        }),
+      },
+    });
+
+    const source = container.querySelector('source[type="image/webp"]');
+    const img = container.querySelector('img');
+
+    expect(source?.getAttribute('srcset')).toBe('/media/p1/card.webp 600w, /media/p1/card2x.webp 1200w');
+    expect(img?.getAttribute('srcset')).toBe('/media/p1/card.jpg 600w, /media/p1/card2x.jpg 1200w');
+    // El ancla responsive (ROADMAP.md W3) exige que `sizes` no cambie al añadir `card2x`.
+    expect(source?.getAttribute('sizes')).toBe('(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw');
+  });
+
   it('marks the first-screen image as eager and high priority when priority is set', async () => {
     const { container } = await render(
       ProductCard,

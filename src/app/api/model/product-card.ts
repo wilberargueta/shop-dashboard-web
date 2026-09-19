@@ -1,5 +1,5 @@
 /**
- * OpenAPI definition
+ * shop-backend-service
  *
  * 
  *
@@ -17,7 +17,13 @@ export interface ProductCard {
     name?: string;
     slug?: string;
     shortDescription?: string;
+    /**
+     * Precio de lista.
+     */
     price?: number;
+    /**
+     * Precio tras aplicar el descuento vigente, si lo hay.
+     */
     effectivePrice?: number;
     onSale?: boolean;
     discountPercentage?: number;

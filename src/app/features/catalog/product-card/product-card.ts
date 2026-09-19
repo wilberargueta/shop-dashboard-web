@@ -26,6 +26,7 @@ export class ProductCard {
   readonly whatsappRequested = output<ProductCardDto>();
 
   protected readonly cardImage = computed(() => this.product().primaryImage?.card ?? null);
+  protected readonly card2xImage = computed(() => this.product().primaryImage?.card2x ?? null);
   protected readonly detailHref = computed(() => `/p/${this.product().slug ?? ''}`);
 
   /**
@@ -56,16 +57,30 @@ export class ProductCard {
     `(min-width: ${BREAKPOINTS.md}px) 50vw, ` +
     `100vw`;
 
+  /** W3.1: `card2x` (1200w) se suma al mismo `srcset` que `card` (600w) cuando el backend lo publica; `sizes` no cambia. */
   protected readonly cardSrcsetWebp = computed(() => {
-    const image = this.cardImage();
-    return image?.webp ? `${image.webp} ${image.width ?? 600}w` : null;
+    const candidates = [this.srcsetCandidate(this.cardImage(), 'webp'), this.srcsetCandidate(this.card2xImage(), 'webp')];
+    return this.joinSrcset(candidates);
   });
 
   protected readonly cardSrcsetFallback = computed(() => {
     const image = this.cardImage();
-    const url = image?.jpeg ?? image?.webp;
-    return url ? `${url} ${image?.width ?? 600}w` : null;
+    const candidates = [
+      this.srcsetCandidate(image, image?.jpeg ? 'jpeg' : 'webp'),
+      this.srcsetCandidate(this.card2xImage(), this.card2xImage()?.jpeg ? 'jpeg' : 'webp'),
+    ];
+    return this.joinSrcset(candidates);
   });
+
+  private srcsetCandidate(image: { webp?: string; jpeg?: string; width?: number } | null, format: 'webp' | 'jpeg'): string | null {
+    const url = format === 'jpeg' ? image?.jpeg : image?.webp;
+    return url ? `${url} ${image?.width ?? 600}w` : null;
+  }
+
+  private joinSrcset(candidates: readonly (string | null)[]): string | null {
+    const present = candidates.filter((candidate): candidate is string => candidate !== null);
+    return present.length > 0 ? present.join(', ') : null;
+  }
 
   protected readonly outOfStockReasonId = computed(() => `product-card-oos-${this.product().id}`);
   protected readonly selectionCapReasonId = computed(() => `product-card-cap-${this.product().id}`);

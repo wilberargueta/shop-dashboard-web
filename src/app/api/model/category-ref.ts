@@ -1,5 +1,5 @@
 /**
- * OpenAPI definition
+ * shop-backend-service
  *
  * 
  *

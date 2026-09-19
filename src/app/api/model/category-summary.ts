@@ -1,5 +1,5 @@
 /**
- * OpenAPI definition
+ * shop-backend-service
  *
  * 
  *
@@ -12,6 +12,9 @@
 export interface CategorySummary { 
     slug?: string;
     name?: string;
+    /**
+     * Productos publicados en esta categoría.
+     */
     productCount?: number;
 }
 

@@ -1,5 +1,5 @@
 /**
- * OpenAPI definition
+ * shop-backend-service
  *
  * 
  *
@@ -13,6 +13,10 @@ import { RenditionRef } from './rendition-ref';
 export interface ImageRef { 
     altText?: string;
     card?: RenditionRef;
+    /**
+     * Versión a doble densidad de píxeles, para pantallas retina.
+     */
+    card2x?: RenditionRef;
     thumb?: RenditionRef;
 }
 
