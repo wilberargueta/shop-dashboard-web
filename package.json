@@ -10,6 +10,7 @@
     "serve:ssr:shop-dashboard-web": "node dist/shop-dashboard-web/server/server.mjs",
     "lint": "ng lint",
     "e2e": "playwright test",
+    "e2e:seed": "node scripts/seed-e2e-catalog.mjs",
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
     "extract-i18n": "ng extract-i18n",

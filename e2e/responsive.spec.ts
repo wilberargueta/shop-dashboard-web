@@ -113,9 +113,22 @@ test.describe('caso 54: la barra de selección no tapa el último producto', () 
       const firstCheckbox = page.getByRole('list').getByRole('checkbox').first();
       await firstCheckbox.click();
       const bar = page.getByRole('region', { name: 'Selección de productos' });
+      // La clase que reserva el `padding-bottom` (catalog-page.scss) se
+      // añade en el mismo re-render reactivo que muestra la barra: esperar a
+      // que la barra sea visible garantiza que ese padding ya existe antes
+      // de medir `scrollHeight` más abajo. Sin esto, `scrollHeight` se lee a
+      // veces justo antes de ese re-render y el scroll se queda corto
+      // exactamente por la altura de la barra.
+      await expect(bar).toBeVisible();
 
       const lastCard = page.locator('.product-card').last();
-      await lastCard.scrollIntoViewIfNeeded();
+      // `scrollIntoViewIfNeeded()` usa el algoritmo nativo del navegador, que
+      // no sabe que la barra de selección es `position: fixed` — se detiene
+      // en cuanto la tarjeta "entra" en el viewport completo, antes de llegar
+      // al fondo real de la página donde el `padding-bottom` reservado
+      // (catalog-page.scss) sí la deja libre. Bajar hasta el fondo real es lo
+      // que hace un usuario de verdad y lo que este caso quiere comprobar.
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
       const cardBox = await lastCard.boundingBox();
       const barBox = await bar.boundingBox().catch(() => null);

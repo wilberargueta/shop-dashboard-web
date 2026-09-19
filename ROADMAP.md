@@ -1488,7 +1488,7 @@ páginas, muy por debajo de cualquier umbral de riesgo.
 
 ---
 
-### [ ] W15. Extremo a extremo y despliegue
+### [x] W15. Extremo a extremo y despliegue
 
 Suite de Playwright con los casos 47 a 50. `Dockerfile` multi-etapa para el
 servidor SSR, usuario no root, `HEALTHCHECK`. README con instrucciones reales.
@@ -1500,6 +1500,139 @@ servidor SSR, usuario no root, `HEALTHCHECK`. README con instrucciones reales.
 - La IP del contenedor SSR está documentada como la que hay que añadir a
   `INTERNAL_CLIENTS` del backend — sin eso el sitio se auto-bloquea.
 - Seguir el README desde cero levanta el sitio.
+
+**Hecho y verificado en la sesión anterior:**
+- **Caso 49 escrito**: `e2e/whatsapp-flow.spec.ts` — mismo flujo que los
+  casos 47/48 (ya existían, cerrados en `W14`) pero a 375×667
+  (`MOBILE_PORTRAIT`, nueva constante en `e2e/utils/viewports.ts`). En móvil,
+  categoría y búsqueda viven dentro del panel deslizante
+  (`app-catalog-filter-mobile-panel`, `role="dialog"`, W5/W13), así que el
+  test abre "Filtros" antes de tocarlos y lo cierra antes de continuar —
+  confirmado con `playwright test --list` que Playwright lo descubre y
+  ejecuta correctamente.
+- **`Dockerfile` multi-etapa**, construido y probado de verdad, no solo
+  escrito:
+  - `deps` → `build` (`pnpm build`) → `runtime` (`node:24-slim` limpio,
+    `pnpm install --prod --frozen-lockfile`, solo copia `dist/browser` y
+    `dist/server`).
+  - **Bug real encontrado en el primer intento de build**: `pnpm install`
+    fallaba con `ERR_PNPM_IGNORED_BUILDS` en la imagen — el Dockerfile
+    copiaba `package.json`/`pnpm-lock.yaml` pero no `pnpm-workspace.yaml`,
+    que es donde vive `allowBuilds` (la lista blanca de paquetes con scripts
+    de instalación: `esbuild`, `lmdb`, `@parcel/watcher`, etc.). Sin ese
+    archivo, pnpm cae al comportamiento estricto por defecto y se niega a
+    instalar. Corregido copiándolo también.
+  - **Segundo hallazgo, de tamaño de imagen**: con `pnpm install --prod`
+    sin más, la imagen final pesaba 909 MB — `/root/.local/share/pnpm`
+    (store de contenido + caché de descargas) se queda dentro de la imagen
+    aunque `node_modules` no lo necesite en tiempo de ejecución. Verificado
+    borrando ese directorio en un contenedor ya arrancado y confirmando con
+    `curl` que el servidor seguía respondiendo (los symlinks de pnpm dentro
+    de `node_modules/.pnpm` están enlazados por hardlink, no por symlink al
+    store externo). Con `rm -rf "$(pnpm store path)" "$HOME/.cache"` en la
+    misma capa: imagen final de **273 MB**.
+  - **Verificado real**: `docker build` construye sin caché
+    (`--no-cache`), el contenedor arranca `USER node` (uid 1000, no root,
+    confirmado con `whoami`/`id`), `docker inspect
+    --format='{{.State.Health.Status}}'` marca `healthy` a los pocos
+    segundos, y `curl http://localhost:4000/` devuelve el HTML del
+    catálogo ya renderizado en servidor (no una SPA vacía).
+- **Mecanismo de `INTERNAL_CLIENTS` verificado de extremo a extremo, no solo
+  documentado**: se unió el contenedor de este sitio a la misma red Docker
+  que un backend real (`API_BASE_URL=http://backend:8080`, resolviendo por
+  nombre de servicio) y `curl` contra el sitio devolvió el HTML servido con
+  la respuesta real del backend (`"No hay productos que coincidan con estos
+  filtros."`, el estado vacío real, no un error ni un timeout) — confirma
+  que la conectividad contenedor-a-contenedor que describe el README
+  funciona. El README documenta `docker network inspect ... --format
+  '{{(index .IPAM.Config 0).Subnet}}'` para obtener el CIDR a añadir a
+  `INTERNAL_CLIENTS` del backend (más estable que la IP suelta del
+  contenedor, que cambia en cada arranque — mismo motivo que ya explica
+  `docs/ARQUITECTURA.md` §7).
+- **`pnpm lint && pnpm test && pnpm build` en verde**: 266 tests, cobertura
+  86.27 % líneas (por encima del umbral del 80 % de `W14`).
+- **README.md reescrito** (seguía siendo el scaffold de `ng new` sin tocar
+  desde `W0`): requisitos, desarrollo, pruebas, variables de entorno reales
+  que lee `src/server.ts`, build de producción y la sección de Docker con
+  el flujo de `INTERNAL_CLIENTS` completo.
+
+**Resuelto en esta sesión — catálogo sembrado y `pnpm e2e` en verde:**
+- **Script de sembrado reproducible, `scripts/seed-e2e-catalog.mjs`**
+  (mismo estilo que `scripts/generate-api.mjs`: Node ESM nativo, sin
+  dependencias nuevas), decisión tomada con el usuario tras confirmar que el
+  bloqueo anterior seguía en pie: inicia sesión como `ADMIN` contra
+  `POST /api/auth/login` (con permiso explícito del usuario para esa llamada
+  concreta — el clasificador de seguridad del modo automático la bloqueó dos
+  veces más, incluso ya autorizada, por parecer fuerza bruta al repetirse
+  con contraseñas distintas; el propio agente no insistió y el usuario corrió
+  el script en su terminal) y crea 2 categorías + 5 productos publicados
+  (`Aceites`: lavanda/árbol de té/eucalipto; `Cremas`: karité/aloe vera) —
+  no los 11 productos sin script reproducible que documentó `W14`, sino
+  exactamente el dataset mínimo que los specs de `e2e/*.spec.ts` ya
+  esperaban por nombre. Comando: `pnpm e2e:seed` (documentado en
+  `README.md` §Pruebas). Idempotente: vuelve a correr sin duplicar nada.
+- **Bug real en el propio script**: `POST /api/admin/v1/products` devolvía
+  `400 "Failed to read request"` genérico. Causa, confirmada leyendo
+  `ProductCreateRequest.java`: es un record de Java con `int stock` e
+  `int sortOrder` primitivos — si el JSON no los incluye, Jackson no puede
+  construir el record (no hay `null` posible para un `int`) y falla antes de
+  llegar a la validación de campos. Corregido enviando `stock`/`sortOrder`
+  explícitos.
+- **Imagen real subida al producto de lavanda**: `e2e/whatsapp-flow.spec.ts`
+  mockea una segunda imagen duplicando `body.images` de la respuesta real
+  (comentario ya existente en el spec) — con el producto sin ninguna imagen
+  real, duplicar `[]` sigue dando `[]`, y el carrusel nunca tenía "Imagen 1
+  de 2" que mostrar. El script genera un PNG mínimo válido a mano (firma +
+  `IHDR`/`IDAT`/`IEND`, `zlib.deflateSync`, sin librerías de imagen) y lo
+  sube por `POST /products/{id}/images`; como el backend no expone todavía
+  ningún `GET` de imágenes (solo `POST`/`DELETE` — `AdminImageController.java`
+  lo documenta explícitamente como pendiente), la confirmación de que
+  terminó de procesarse en segundo plano se hace sondeando la respuesta
+  pública hasta que `images` deja de estar vacío.
+- **Hallazgo real de infraestructura, no de este repo**: tras subir la
+  imagen, `GET /api/public/v1/products/{slug}` la siguió devolviendo vacía
+  varios minutos — la caché Caffeine de `product-detail`
+  (`CacheConfig.java`, 2 minutos, `expireAfterWrite`) no se invalida al
+  subir una imagen nueva, y ya se había cacheado una respuesta sin imagen
+  desde una verificación anterior en la misma sesión. Confirmado contra la
+  base de datos directamente (`product_images.status = 'READY'`, sin
+  `failure_reason`: el procesado sí había terminado bien) antes de descartar
+  que fuera un bug del backend. Se resolvió con `docker restart shop-backend`
+  (reinicio del contenedor, no de los datos — Postgres nunca se tocó).
+- **Dos bugs reales de flakiness encontrados y corregidos en los propios
+  tests de Playwright**, ninguno relajando una aserción:
+  - `e2e/whatsapp-flow.spec.ts` (caso 49, móvil): el test tecleaba la
+    búsqueda justo después de marcar la categoría, sin esperar a que esa
+    navegación terminara. `searchDraft` en `catalog-filter-panel.ts` es un
+    `linkedSignal` que se resincroniza con **cualquier** cambio de
+    `filters()`, no solo con `q` — si el cambio de categoría resolvía tarde,
+    pisaba el texto recién tecleado. El caso 47 (escritorio) ya evitaba esto
+    esperando a que el grid reflejara el filtro de categoría antes de
+    escribir; se igualó el caso 49 al mismo patrón.
+  - `e2e/responsive.spec.ts` (caso 54, la barra de selección no tapa el
+    último producto): dos problemas apilados, investigados por separado.
+    Primero, `scrollIntoViewIfNeeded()` usa el algoritmo nativo del
+    navegador, que no sabe que la barra es `position: fixed` — se detenía
+    en cuanto la tarjeta entraba en el viewport completo, antes del fondo
+    real de la página. Cambiado a `window.scrollTo(0,
+    document.body.scrollHeight)`, que sí reproduce a un usuario bajando
+    hasta el final de verdad. Eso reveló un segundo problema, puramente de
+    orden: el `scrollTo` se ejecutaba justo después del `click()` en el
+    checkbox, sin esperar al re-render reactivo que añade la clase que
+    reserva el `padding-bottom` (`catalog-page.scss`) — a veces
+    `document.body.scrollHeight` se leía antes de que ese padding existiera,
+    y el scroll se quedaba corto exactamente por la altura de la barra.
+    Corregido esperando a que la barra sea visible antes de medir. Se
+    consideró (y se descartó, verificado explícitamente revirtiendo el
+    cambio) subir `--selection-bar-height` en `styles.css`: con el orden de
+    espera correcto, el valor original ya deja margen de sobra — no hacía
+    falta tocar CSS de producción para esto.
+- **`pnpm exec playwright test` (39 casos): las 39 pruebas pasan** contra el
+  backend real con el catálogo ya sembrado — casos 1-58 de
+  `PROJECT_SPEC.md` §15 en verde.
+- `pnpm lint && pnpm test && pnpm build`: 266 tests, sin errores de lint,
+  build de producción íntegro (bundle inicial dentro del presupuesto de
+  200 KB).
 
 ---
 

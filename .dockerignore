@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+.angular
+.git
+.vscode
+e2e
+lighthouse-report.html
+lighthouse-report-product.html
+*.md
+.editorconfig
+.prettierrc
