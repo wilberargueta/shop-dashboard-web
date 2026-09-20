@@ -1,4 +1,5 @@
 import { provideRouter } from '@angular/router';
+import { DeferBlockState } from '@angular/core/testing';
 import { render } from '@testing-library/angular';
 import { PublicCatalogControllerService } from './api/api/public-catalog-controller.service';
 import { API_BASE_URL } from './core/config/api-base-url.token';
@@ -16,6 +17,10 @@ const WHATSAPP_SETTINGS_VALUE: WhatsAppSettings = {
 
 function renderApp() {
   return render(App, {
+    // `@defer (when whatsappPreview.open())` no resuelve de forma fiable con
+    // el disparador real en jsdom — mismo criterio que
+    // `catalog-filter-mobile-panel.spec.ts` (W5).
+    deferBlockStates: DeferBlockState.Complete,
     providers: [
       provideRouter([]),
       { provide: PublicCatalogControllerService, useValue: { getProduct: vi.fn() } },
@@ -59,7 +64,7 @@ describe('App', () => {
     expect(skipLink.getAttribute('href')).toBe('#main-content');
   });
 
-  it('makes the router outlet inert while the WhatsApp preview dialog is open', async () => {
+  it('makes the router outlet inert while the WhatsApp preview dialog is open, and un-inert once closed', async () => {
     const { container, fixture } = await renderApp();
     const outletWrapper = container.querySelector('div');
     expect(outletWrapper?.hasAttribute('inert')).toBe(false);
@@ -70,5 +75,22 @@ describe('App', () => {
     await fixture.whenStable();
 
     expect(outletWrapper?.hasAttribute('inert')).toBe(true);
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+
+    /**
+     * Hallazgo real: `@defer (when whatsappPreview.open())` es un disparador
+     * de una sola vez (semántica documentada de Angular) — carga el bloque
+     * la primera vez que la condición es verdadera, pero nunca lo retira
+     * cuando vuelve a ser falsa. Sin un `@if` reactivo dentro del `@defer`
+     * (`app.html`), el diálogo se quedaba montado para siempre tras la
+     * primera apertura y "Cerrar" no hacía nada visible. Mismo patrón que ya
+     * usa `catalog-filter-mobile-panel.html` para el mismo problema.
+     */
+    whatsappPreview.close();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(outletWrapper?.hasAttribute('inert')).toBe(false);
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 });

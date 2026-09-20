@@ -18,9 +18,8 @@
 
   <p class="whatsapp-preview-dialog__message">{{ message() }}</p>
 
-  <p class="visually-hidden" aria-live="polite">{{ copyAnnouncement() }}</p>
-
   <div class="whatsapp-preview-dialog__footer">
+    <p class="whatsapp-preview-dialog__copy-status" aria-live="polite">{{ copyAnnouncement() }}</p>
     <button type="button" class="whatsapp-preview-dialog__copy" (click)="onCopy()">
       <span i18n="@@whatsappPreviewDialog.copy">Copiar</span>
     </button>

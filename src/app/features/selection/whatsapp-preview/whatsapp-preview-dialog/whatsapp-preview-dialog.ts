@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { AnalyticsEventService } from '../../../../core/analytics/analytics-event.service';
 import { WHATSAPP_SETTINGS } from '../../../../core/config/whatsapp-settings.token';
 import { FocusTrap } from '../../../../shared/focus-trap/focus-trap';
@@ -29,6 +29,12 @@ export class WhatsAppPreviewDialog {
   private readonly whatsAppTemplateService = inject(WhatsAppTemplateService);
   private readonly analyticsEventService = inject(AnalyticsEventService);
   private readonly settings = inject(WHATSAPP_SETTINGS);
+  private readonly destroyRef = inject(DestroyRef);
+  private copyAnnouncementTimeout?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => clearTimeout(this.copyAnnouncementTimeout));
+  }
 
   protected readonly message = computed(() =>
     this.whatsAppTemplateService.renderMessage(this.lines(), this.settings.templates, {
@@ -63,10 +69,21 @@ export class WhatsAppPreviewDialog {
     window.open(this.url(), '_blank', 'noopener,noreferrer');
   }
 
+  /**
+   * `copyAnnouncement` es visible (no solo `aria-live` para lectores de
+   * pantalla): sin confirmación en pantalla, un usuario vidente no tiene
+   * forma de saber que el clic hizo algo. Se limpia sola a los 2 s, y
+   * también antes de volver a fijarla, para que un segundo clic reinicie el
+   * temporizador y el cambio de contenido dispare un nuevo anuncio.
+   */
   protected onCopy(): void {
     navigator.clipboard
       .writeText(this.message())
-      .then(() => this.copyAnnouncement.set($localize`:@@whatsappPreviewDialog.copied:Copiado.`))
+      .then(() => {
+        clearTimeout(this.copyAnnouncementTimeout);
+        this.copyAnnouncement.set($localize`:@@whatsappPreviewDialog.copied:Copiado.`);
+        this.copyAnnouncementTimeout = setTimeout(() => this.copyAnnouncement.set(''), 2000);
+      })
       .catch(() => this.copyAnnouncement.set(''));
   }
 }

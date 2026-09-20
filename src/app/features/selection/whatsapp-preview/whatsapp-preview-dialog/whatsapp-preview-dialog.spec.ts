@@ -146,4 +146,24 @@ describe('WhatsAppPreviewDialog', () => {
     expect(clipboardWriteText.mock.calls[0][0]).toContain('Café & Té');
     expect(clipboardWriteText.mock.calls[0][0]).not.toContain('%');
   });
+
+  it('shows a visible confirmation after copying, which clears itself after a few seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      const { fixture } = await renderDialog();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Copiar' }));
+      await vi.advanceTimersByTimeAsync(0);
+      fixture.detectChanges();
+
+      expect(screen.getByText('Copiado.')).toBeTruthy();
+
+      await vi.advanceTimersByTimeAsync(2000);
+      fixture.detectChanges();
+
+      expect(screen.queryByText('Copiado.')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

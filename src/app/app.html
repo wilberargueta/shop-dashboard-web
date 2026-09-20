@@ -5,9 +5,11 @@
 </div>
 <app-selection-root />
 @defer (when whatsappPreview.open()) {
-  <app-whatsapp-preview-dialog
-    [lines]="whatsappPreview.lines()"
-    [returnFocusTo]="whatsappPreview.returnFocusTo()"
-    (closed)="whatsappPreview.close()"
-  />
+  @if (whatsappPreview.open()) {
+    <app-whatsapp-preview-dialog
+      [lines]="whatsappPreview.lines()"
+      [returnFocusTo]="whatsappPreview.returnFocusTo()"
+      (closed)="whatsappPreview.close()"
+    />
+  }
 }

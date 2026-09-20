@@ -1071,6 +1071,38 @@ Botón de WhatsApp individual en la tarjeta y en el modal.
   reales, evento `WHATSAPP_CLICK` llegando de verdad al backend) queda
   pendiente, igual que en tareas anteriores.
 
+**Bug real reportado por el usuario y corregido después de W15**: "Cerrar" y
+"Copiar" parecían no hacer nada — solo "Enviar" funcionaba.
+- **Causa de "Cerrar"**: pese a lo que dice la desviación de arriba ("mismo
+  patrón que `ProductDetailModal`"), `app.html` tenía
+  `@defer (when whatsappPreview.open())` **sin** el `@if` reactivo interior
+  que `ProductDetailModal` sí tiene (`catalog-page.html`:
+  `@if (openSlug(); as slug)`). `@defer (when …)` es un disparador de una
+  sola vez (semántica documentada de Angular): carga el bloque la primera
+  vez que la condición es verdadera, pero nunca lo retira cuando vuelve a
+  ser falsa. Sin el `@if` interior, el diálogo se quedaba montado para
+  siempre desde la primera apertura — "Cerrar" emitía el evento y
+  `WhatsAppPreviewService.close()` sí ponía `open()` en `false`, pero nada
+  volvía a ocultar el componente. Corregido envolviendo
+  `<app-whatsapp-preview-dialog>` en `@if (whatsappPreview.open())` dentro
+  del `@defer`, igual que ya hace `catalog-filter-mobile-panel.html` (W5) y
+  `catalog-page.html` (W7) para el mismo problema. Nunca lo detectó ningún
+  test porque `app.spec.ts` solo comprobaba que abrir ponía `inert` el
+  `<router-outlet>`, nunca que cerrar lo revirtiera — se añadió esa
+  aserción, y sin el `@if` interior falla en rojo.
+- **Causa de "Copiar"**: sí copiaba al portapapeles, pero la única
+  confirmación era un `aria-live` con `class="visually-hidden"` — un
+  usuario vidente no veía ningún cambio en pantalla al hacer clic, así que
+  parecía no hacer nada. Se hizo visible (ya no `visually-hidden`, con su
+  propio estilo) y se limpia sola a los 2 s (antes se quedaba fijada para
+  siempre tras el primer copiado, lo que además impedía que un segundo
+  clic disparara un nuevo anuncio de `aria-live`, al no cambiar el
+  contenido).
+- Ambos verificados con Playwright contra un navegador real (no solo con
+  los componentes aislados): abrir, copiar (confirmación visible), cerrar
+  (el diálogo desaparece de verdad) y volver a abrir sin quedar en un
+  estado roto.
+
 ---
 
 ## Fase 4 — SEO, i18n y pulido
