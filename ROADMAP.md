@@ -774,7 +774,7 @@ al cerrar.
 
 ## Fase 3 — WhatsApp
 
-### [ ] W8. Renderizado de plantillas
+### [x] W8. Renderizado de plantillas
 
 `WhatsAppTemplateService`: implementa exactamente las reglas de
 `ARQUITECTURA.md` §6 — los 9 marcadores por producto, los 5 globales, marcador
@@ -821,24 +821,51 @@ codificación correcta.
   para confirmar 100 % líneas/ramas/funciones en este servicio. No se tocó
   `angular.json` para exigir cobertura global — eso es alcance de W14.
 
-**Pendiente — el caso 12 no tiene test, no marcar `[x]` hasta resolver esto:**
-- **`whatsapp-golden.json` no existe todavía**: verificado contra
-  `shop-backend-service` — la tarea `B11` de su propio `ROADMAP.md`
-  ("Settings y plantillas de WhatsApp", que incluye la tarea de Gradle que
-  genera y publica el archivo) sigue sin implementar, y no hay ningún archivo
-  de ese nombre en ningún repo local. Es el mismo bloqueo que impidió generar
-  `PublicSettings` en W1. Decisión tomada con el usuario: implementar y cubrir
-  al 100 % los casos 1–11 ahora (hechos, en
-  `whatsapp-template.service.spec.ts`) y dejar el caso 12 documentado como
-  pendiente, sin escribir ningún test deshabilitado (`CLAUDE.md` lo prohíbe
-  explícitamente).
-- **Para cerrar esto**: cuando `B11` esté implementado y publique
-  `build/fixtures/whatsapp-golden.json`, commitear ese archivo en
-  `src/test/fixtures/whatsapp-golden.json` de este repo y añadir un test que
-  lo recorra caso por caso contra `WhatsAppTemplateService.renderMessage()`.
-  Si algún caso no coincide, revisar primero si el desajuste viene de una de
-  las decisiones documentadas arriba (`{{descuento}}` sin descuento, locale
-  de formato) antes de asumir que el bug está en este repo.
+**Resuelto en la sesión de W15 — caso 12 con test, y un bug real encontrado
+y corregido:**
+- **El archivo ya existía**: `src/test/fixtures/whatsapp-golden.json` había
+  sido commiteado manualmente por el usuario (commit `c2c9f2b`, fuera del
+  flujo de sesiones documentado aquí) cuando `B11` del backend se completó,
+  pero nunca se escribió el test que lo recorre — la nota "Pendiente" de
+  arriba quedó desactualizada. Se regeneró desde cero con
+  `./gradlew generateWhatsAppGoldenFixtures` en `shop-backend-service` para
+  confirmar que sigue siendo bit a bit idéntico al commiteado (lo es).
+- **Test nuevo**: `whatsapp-golden.spec.ts` importa el fixture y recorre
+  sus 6 casos contra `WhatsAppTemplateService.renderMessage()`. Mapeo de
+  campos: el fixture llama `price`/`listPrice` al precio efectivo/de lista
+  (al revés que `WhatsAppSelectionLine`, que llama `price` al de lista), y
+  su `url` ya es absoluta (`https://tienda.com/p/...`) — el test fija
+  `SITE_URL` a `https://tienda.com` para que coincida sin transformar nada.
+- **Bug real encontrado por el propio test, no hipotético**: el caso
+  `cinco_marcadores_globales` (plantilla multi con `templateItem`/
+  `templateFooter` vacíos) esperaba `"...6\n\n\n\n"` y esta implementación
+  producía `"...6"`, sin los saltos de línea. Causa, confirmada leyendo
+  `WhatsAppTemplateRenderer.java`: el backend arma el mensaje multi-producto
+  como `header + "\n" + items.join("\n") + "\n" + footer` — el salto entre
+  encabezado, cada ítem y el pie lo pone **el renderizado**, no la
+  plantilla. Esta implementación solo concatenaba `header + body + footer`
+  sin ningún separador, apoyándose en que las plantillas de prueba
+  embebieran su propio `\n`. Con las plantillas reales de
+  `ARQUITECTURA.md` §6 (que no llevan esos saltos, confirmado contra
+  `GET /api/public/v1/settings` real) el mensaje del sitio habría salido
+  todo pegado — encabezado e ítems en la misma línea — distinto de lo que
+  el admin aprueba en el backoffice. Es exactamente el escenario que
+  `ARQUITECTURA.md` §6 ("Dos implementaciones, un solo resultado") y este
+  caso 12 existen para atrapar.
+- **Corregido en `whatsapp-template.service.ts`**: nuevo `renderMulti`/
+  `joinMulti`, calcado de `WhatsAppTemplateRenderer.join()`/`truncate()` del
+  backend (mismo algoritmo de truncado: probar quedándose con
+  `items.length - 1`, `- 2`, ... hasta que quepa, en vez del heurístico
+  incremental anterior). Los 6 casos del golden file pasan, y se
+  actualizaron dos tests existentes de `whatsapp-template.service.spec.ts`
+  (casos 4 y 6) cuyas plantillas de prueba embebían separadores propios que
+  ya no hacen falta — no se relajó ninguna aserción, solo se ajustaron para
+  reflejar la estructura real.
+- **Cobertura 100 % confirmada de verdad** (líneas, ramas y funciones, vía
+  `coverage-final.json`, no solo el resumen impreso): se añadió un test para
+  la rama de reserva final de `renderMulti` (cuando ni siquiera vaciar la
+  lista de ítems basta para caber en 1500 caracteres), que no tenía ningún
+  caso que la ejercitara.
 
 ---
 

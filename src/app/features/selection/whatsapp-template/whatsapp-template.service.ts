@@ -71,9 +71,8 @@ export class WhatsAppTemplateService {
     const items = lines.map((line) =>
       substitute(templates.multiItem, { ...global, ...this.productMarkers(line) }),
     );
-    const body = this.truncateItems(items, header.length + footer.length);
 
-    return header + body + footer;
+    return this.renderMulti(header, items, footer);
   }
 
   buildWhatsAppUrl(phoneNumber: string, message: string): string {
@@ -112,22 +111,38 @@ export class WhatsAppTemplateService {
   }
 
   /**
-   * Regla 4 de ARQUITECTURA.md §6: si el mensaje supera 1500 caracteres, se
-   * corta la lista de ítems y se añade "… y N productos más". El presupuesto
-   * de cada paso ya reserva espacio para el sufijo que haría falta si el
-   * siguiente ítem no entra, para no rebasar el límite por el sufijo mismo.
+   * Estructura del mensaje multi-producto: `header + "\n" + items.join("\n")
+   * + "\n" + footer`, calcada de `WhatsAppTemplateRenderer.join()` del
+   * backend — las plantillas reales (`ARQUITECTURA.md` §6) no llevan sus
+   * propios separadores entre encabezado/ítems/pie, así que ese salto lo
+   * pone el renderizado, no la plantilla. Verificado contra
+   * `whatsapp-golden.json` (caso 12).
    */
-  private truncateItems(items: readonly string[], headerAndFooterLength: number): string {
-    let body = '';
-    for (let i = 0; i < items.length; i++) {
-      const candidate = body + items[i];
-      const remainingAfter = items.length - (i + 1);
-      const suffix = remainingAfter > 0 ? `… y ${remainingAfter} productos más` : '';
-      if (headerAndFooterLength + candidate.length + suffix.length > MAX_MESSAGE_LENGTH) {
-        return body + `… y ${items.length - i} productos más`;
-      }
-      body = candidate;
+  private renderMulti(header: string, items: readonly string[], footer: string): string {
+    const full = this.joinMulti(header, items, footer, 0);
+    if (full.length <= MAX_MESSAGE_LENGTH) {
+      return full;
     }
-    return body;
+
+    /**
+     * Regla 4 de ARQUITECTURA.md §6: si el mensaje supera 1500 caracteres, se
+     * corta la lista de ítems y se añade "… y N productos más". Los totales
+     * del pie ya se calcularon sobre la lista completa (en `globalMarkers`),
+     * así que truncar aquí solo recorta qué líneas se muestran.
+     */
+    for (let keep = items.length - 1; keep >= 0; keep--) {
+      const dropped = items.length - keep;
+      const candidate = this.joinMulti(header, items.slice(0, keep), footer, dropped);
+      if (candidate.length <= MAX_MESSAGE_LENGTH) {
+        return candidate;
+      }
+    }
+    return this.joinMulti(header, [], footer, items.length);
+  }
+
+  private joinMulti(header: string, items: readonly string[], footer: string, dropped: number): string {
+    const notice = dropped > 0 ? `… y ${dropped} productos más\n` : '';
+    const body = items.length === 0 ? '' : items.join('\n') + '\n';
+    return header + '\n' + body + notice + footer;
   }
 }

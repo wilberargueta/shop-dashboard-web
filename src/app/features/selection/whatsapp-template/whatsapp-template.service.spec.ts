@@ -106,7 +106,7 @@ describe('WhatsAppTemplateService', () => {
       { storeName: 'Mi Tienda' },
     );
 
-    expect(message).toBe('H:xxF:');
+    expect(message).toBe('H:\nx\nx\nF:');
   });
 
   it('uses template_single for a single product (case 5)', () => {
@@ -120,9 +120,13 @@ describe('WhatsAppTemplateService', () => {
   it('renders header + one line per product + footer for three products (case 6)', () => {
     const lines = [buildLine({ name: 'A' }), buildLine({ name: 'B' }), buildLine({ name: 'C' })];
 
+    // Sin saltos de línea propios en la plantilla: el salto entre encabezado,
+    // cada ítem y el pie lo pone el renderizado (calcado del backend, ver
+    // `renderMulti`/`joinMulti`), no la plantilla — así son las plantillas
+    // reales de `ARQUITECTURA.md` §6.
     const message = service.renderMessage(
       lines,
-      buildTemplates({ multiHeader: 'H\n', multiItem: '- {{producto}}\n', multiFooter: 'F' }),
+      buildTemplates({ multiHeader: 'H', multiItem: '- {{producto}}', multiFooter: 'F' }),
       { storeName: 'Mi Tienda' },
     );
 
@@ -211,6 +215,24 @@ describe('WhatsAppTemplateService', () => {
     expect(message).toContain('productos más');
     expect(message.startsWith('Header\n')).toBe(true);
     expect(message.endsWith('\nFooter')).toBe(true);
+  });
+
+  it('falls back to header/footer only when trimming every item still exceeds 1500 characters', () => {
+    const veryLongHeader = 'H'.repeat(2000);
+    const lines = [buildLine({ name: 'A' }), buildLine({ name: 'B' })];
+
+    const message = service.renderMessage(
+      lines,
+      buildTemplates({ multiHeader: veryLongHeader, multiItem: '{{producto}}', multiFooter: 'F' }),
+      { storeName: 'Mi Tienda' },
+    );
+
+    // El header por sí solo ya supera el límite: no hay forma de truncar
+    // items para caber, así que se devuelve el mejor esfuerzo (mismo
+    // criterio que `WhatsAppTemplateRenderer.truncate` del backend).
+    expect(message.length).toBeGreaterThan(1500);
+    expect(message.startsWith(veryLongHeader)).toBe(true);
+    expect(message.endsWith('F')).toBe(true);
   });
 
   it('buildWhatsAppUrl encodes &, #, +, tildes, emoji and line breaks correctly (case 11)', () => {
