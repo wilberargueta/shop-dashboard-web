@@ -274,7 +274,21 @@ el resto.
   contra `/` dio **CLS = 0** (objetivo `PROJECT_SPEC.md` §10: < 0.1),
   Rendimiento 98 (objetivo ≥ 90), Accesibilidad 100 (objetivo ≥ 95), SEO 100
   (objetivo 100), LCP 2.1 s (objetivo < 2.5 s). Los cuatro objetivos de la
-  tabla de §10 se cumplen con margen.
+  tabla de §10 se cumplen con margen. `pnpm lighthouse:product` (contra
+  `/p/aceite-esencial-de-lavanda-30ml`, el criterio de `PROJECT_SPEC.md` §16
+  pide ambas rutas) dio los mismos números (CLS 0, Rendimiento 98,
+  Accesibilidad 100, SEO 100, LCP 2.1 s) — cerrando también ese punto de la
+  lista de aceptación completa del repositorio.
+- **Falso positivo real, no de código**: la primera corrida de
+  `pnpm lighthouse:product` dio SEO 91 (`meta-description` ausente) porque
+  el contenedor `shop-backend` había desaparecido del entorno Docker a mitad
+  de sesión (`docker ps` sin contenedores, `ECONNREFUSED` en `:8080`) — la
+  página cayó a su estado de error real
+  ("No se pudo cargar el producto..."), que legítimamente no tiene meta
+  description propia. Confirmado que no era un bug de `SeoService` antes de
+  tocar nada: se repitió con el backend arriba de verdad (mismo volumen de
+  Postgres, los datos de `W15` seguían ahí) y `<title>`/`<meta
+  name="description">` aparecen correctos en el HTML crudo.
 - **Hallazgo de entorno, no de código**: `lighthouse` intentaba lanzar el
   Chrome de Windows a través de la interoperabilidad de WSL2
   (`/mnt/c/Users/.../chrome.exe`), que no expone su puerto de DevTools al
@@ -1684,9 +1698,16 @@ servidor SSR, usuario no root, `HEALTHCHECK`. README con instrucciones reales.
     cambio) subir `--selection-bar-height` en `styles.css`: con el orden de
     espera correcto, el valor original ya deja margen de sobra — no hacía
     falta tocar CSS de producción para esto.
-- **`pnpm exec playwright test` (39 casos): las 39 pruebas pasan** contra el
-  backend real con el catálogo ya sembrado — casos 1-58 de
-  `PROJECT_SPEC.md` §15 en verde.
+- **`pnpm exec playwright test`: las 27 pruebas del repo pasan** contra el
+  backend real con el catálogo ya sembrado (`pnpm exec playwright test --list`
+  confirma el conteo — la cifra de "39" de sesiones anteriores no
+  correspondía al número real de pruebas de este repo, era un error de
+  transcripción que nadie había verificado con `--list`). Cubren los casos
+  33, 44, 47-58 de `PROJECT_SPEC.md` §15 (SSR, responsive, accesibilidad,
+  modal, flujo de WhatsApp). Los casos 1-31 de §15 (plantillas de WhatsApp,
+  scroll infinito, filtros, selección) se verifican a nivel unitario/de
+  componente con `pnpm test`, no con Playwright — así lo pide la propia
+  tabla de `PROJECT_SPEC.md` §15.
 - `pnpm lint && pnpm test && pnpm build`: 266 tests, sin errores de lint,
   build de producción íntegro (bundle inicial dentro del presupuesto de
   200 KB).
