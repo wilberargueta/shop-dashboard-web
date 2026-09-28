@@ -48,6 +48,19 @@ export function parseCatalogFilters(params: ParamMap): CatalogFilters {
   };
 }
 
+/**
+ * Cuenta filtros activos para el contador de "Limpiar filtros"
+ * (PROJECT_SPEC.md §4). `sort` no cuenta: es orden, no filtro.
+ */
+export function countActiveFilters(filters: CatalogFilters): number {
+  let count = filters.categories.length;
+  if (filters.q !== null) count += 1;
+  if (filters.minPrice !== null) count += 1;
+  if (filters.maxPrice !== null) count += 1;
+  if (filters.onSale !== null) count += 1;
+  return count;
+}
+
 export function parseCatalogPage(params: ParamMap): CatalogPage {
   const rawPage = params.get('page');
   const page = rawPage === null || rawPage.trim() === '' ? NaN : Number(rawPage);

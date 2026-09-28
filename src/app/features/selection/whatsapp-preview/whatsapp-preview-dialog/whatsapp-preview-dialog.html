@@ -1,0 +1,30 @@
+<div class="whatsapp-preview-dialog__backdrop" aria-hidden="true" (click)="onClose()"></div>
+<div
+  class="whatsapp-preview-dialog__panel"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId"
+  appFocusTrap
+  [returnFocusTo]="returnFocusTo()"
+  (keydown.escape)="onClose()"
+>
+  <div class="whatsapp-preview-dialog__header">
+    <h2 [id]="titleId" i18n="@@whatsappPreviewDialog.title">Vista previa del mensaje</h2>
+    <button type="button" class="whatsapp-preview-dialog__close" (click)="onClose()">
+      <span class="visually-hidden" i18n="@@whatsappPreviewDialog.close">Cerrar</span>
+      <span aria-hidden="true">×</span>
+    </button>
+  </div>
+
+  <p class="whatsapp-preview-dialog__message">{{ message() }}</p>
+
+  <div class="whatsapp-preview-dialog__footer">
+    <p class="whatsapp-preview-dialog__copy-status" aria-live="polite">{{ copyAnnouncement() }}</p>
+    <button type="button" class="whatsapp-preview-dialog__copy" (click)="onCopy()">
+      <span i18n="@@whatsappPreviewDialog.copy">Copiar</span>
+    </button>
+    <button type="button" class="whatsapp-preview-dialog__send" (click)="onSend()">
+      <span i18n="@@whatsappPreviewDialog.send">Enviar</span>
+    </button>
+  </div>
+</div>

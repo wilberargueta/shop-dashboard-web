@@ -28,6 +28,12 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
 
+  /* Estimación del alto de selection-bar.css (contenido de una línea, ~64px
+     según PROJECT_SPEC.md §11). La usan tanto la barra como el relleno
+     inferior que la compensa en el grid — un solo número, no dos que puedan
+     desalinearse. */
+  --selection-bar-height: 4.5rem;
+
   color-scheme: light;
 }
 
@@ -59,4 +65,23 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* PROJECT_SPEC.md §12: enlace "Saltar al contenido", oculto salvo con foco de
+   teclado — a diferencia de `.visually-hidden`, que oculta siempre. */
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  top: var(--space-2);
 }

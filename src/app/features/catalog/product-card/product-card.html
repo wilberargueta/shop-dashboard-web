@@ -1,55 +1,87 @@
 <article class="product-card" [class.product-card--out-of-stock]="product().inStock === false">
-  @if (cardImage(); as image) {
-    <picture class="product-card__picture">
-      @if (image.webp) {
-        <source type="image/webp" [srcset]="image.webp" />
-      }
-      <img
-        [src]="image.jpeg ?? image.webp"
-        [alt]="product().primaryImage?.altText ?? ''"
-        [attr.width]="image.width ?? 600"
-        [attr.height]="image.height ?? 600"
-        [style.aspect-ratio]="image.width && image.height ? image.width + ' / ' + image.height : '1 / 1'"
-        [attr.loading]="priority() ? 'eager' : 'lazy'"
-        [attr.fetchpriority]="priority() ? 'high' : null"
-        decoding="async"
-      />
-    </picture>
-  } @else {
-    <picture class="product-card__picture">
-      <img
-        src="/images/product-placeholder.svg"
-        alt=""
-        width="600"
-        height="600"
-        style="aspect-ratio: 1 / 1"
-        [attr.loading]="priority() ? 'eager' : 'lazy'"
-        [attr.fetchpriority]="priority() ? 'high' : null"
-        decoding="async"
-      />
-    </picture>
+  <button
+    type="button"
+    role="checkbox"
+    class="product-card__select"
+    [attr.aria-checked]="selected()"
+    [attr.aria-disabled]="selectionDisabled() && !selected() ? 'true' : null"
+    [attr.aria-describedby]="selectionDisabled() && !selected() ? selectionCapReasonId() : null"
+    (click)="onSelectionToggle()"
+  >
+    <span class="product-card__select-mark" aria-hidden="true"></span>
+    <span class="visually-hidden" i18n="@@productCard.selectLabel">Seleccionar {{ product().name }}</span>
+  </button>
+  @if (selectionDisabled() && !selected()) {
+    <span [id]="selectionCapReasonId()" class="visually-hidden" i18n="@@productCard.selectionCapReason"
+      >Límite de selección alcanzado.</span
+    >
   }
 
-  <h3 class="product-card__name">{{ product().name }}</h3>
-
-  <p class="product-card__price">
-    @if (hasDiscount()) {
-      <span class="visually-hidden" i18n="@@productCard.previousPrice">precio anterior</span>
-      <s class="product-card__price-list">{{ product().price | currency: product().currency }}</s>
-      <span class="product-card__price-effective">{{
-        product().effectivePrice | currency: product().currency
-      }}</span>
-      <span class="product-card__badge product-card__badge--discount" i18n="@@productCard.discountBadge"
-        >-{{ product().discountPercentage }}%</span
-      >
+  <a
+    class="product-card__link"
+    [attr.href]="detailHref()"
+    [attr.aria-label]="product().name"
+    (click)="onLinkClick($event)"
+  >
+    @if (cardImage(); as image) {
+      <picture class="product-card__picture">
+        @if (cardSrcsetWebp(); as webpSrcset) {
+          <source type="image/webp" [srcset]="webpSrcset" [attr.sizes]="imageSizes" />
+        }
+        <img
+          [src]="image.jpeg ?? image.webp"
+          [srcset]="cardSrcsetFallback()"
+          [attr.sizes]="imageSizes"
+          [alt]="product().primaryImage?.altText ?? ''"
+          [attr.width]="image.width ?? 600"
+          [attr.height]="image.height ?? 600"
+          [style.aspect-ratio]="image.width && image.height ? image.width + ' / ' + image.height : '1 / 1'"
+          [attr.loading]="priority() ? 'eager' : 'lazy'"
+          [attr.fetchpriority]="priority() ? 'high' : null"
+          decoding="async"
+        />
+      </picture>
     } @else {
-      <span class="product-card__price-effective">{{
-        product().effectivePrice | currency: product().currency
-      }}</span>
+      <picture class="product-card__picture">
+        <img
+          src="/images/product-placeholder.svg"
+          alt=""
+          width="600"
+          height="600"
+          style="aspect-ratio: 1 / 1"
+          [attr.loading]="priority() ? 'eager' : 'lazy'"
+          [attr.fetchpriority]="priority() ? 'high' : null"
+          decoding="async"
+        />
+      </picture>
     }
-  </p>
+
+    <h2 class="product-card__name">{{ product().name }}</h2>
+
+    <app-product-price
+      [price]="product().price"
+      [effectivePrice]="product().effectivePrice"
+      [currency]="product().currency"
+      [onSale]="product().onSale ?? false"
+      [discountPercentage]="product().discountPercentage"
+    />
+  </a>
 
   @if (product().inStock === false) {
     <p class="product-card__badge product-card__badge--out-of-stock" i18n="@@productCard.outOfStock">Agotado</p>
+  }
+  <button
+    type="button"
+    class="product-card__whatsapp-button"
+    [attr.aria-disabled]="product().inStock === false ? 'true' : null"
+    [attr.aria-describedby]="product().inStock === false ? outOfStockReasonId() : null"
+    (click)="onWhatsappClick()"
+  >
+    <span i18n="@@productCard.whatsappButton">Consultar por WhatsApp</span>
+  </button>
+  @if (product().inStock === false) {
+    <span [id]="outOfStockReasonId()" class="visually-hidden" i18n="@@productCard.outOfStockReason"
+      >Agotado. No disponible para pedido por ahora.</span
+    >
   }
 </article>

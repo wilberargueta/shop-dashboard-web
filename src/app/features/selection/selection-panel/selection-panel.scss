@@ -1,0 +1,150 @@
+@use '../../../../styles/breakpoints' as bp;
+
+:host {
+  display: contents;
+}
+
+.selection-panel__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 55%);
+  z-index: 40;
+}
+
+.selection-panel__panel {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  padding-top: max(var(--space-4), env(safe-area-inset-top));
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  padding-left: max(var(--space-4), env(safe-area-inset-left));
+  padding-right: max(var(--space-4), env(safe-area-inset-right));
+}
+
+.selection-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.selection-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+}
+
+.selection-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.selection-panel__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.selection-panel__name {
+  flex: 1 1 100%;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.selection-panel__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-discount);
+  font-size: var(--font-size-lg);
+}
+
+.selection-panel__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.selection-panel__total {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+}
+
+.selection-panel__send {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+@media (min-width: bp.$md) {
+  .selection-panel__panel {
+    inset: var(--space-6);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 25%);
+  }
+}
+
+@media (min-width: bp.$lg) {
+  .selection-panel__panel {
+    /* `inset` es el atajo de `top`/`right`/`bottom`/`left`: declararlo
+       después de fijarlos por separado los pisaba de vuelta a `auto` y el
+       panel centrado quedaba fuera del viewport (mismo bug encontrado y
+       corregido en `product-detail-modal.scss`, W14). */
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 40rem);
+    max-height: min(90dvh, 48rem);
+    border-radius: var(--radius-md);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .selection-panel__panel {
+    animation: selection-panel-in 150ms ease-out;
+  }
+}
+
+@keyframes selection-panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

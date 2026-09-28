@@ -1,0 +1,35 @@
+<button #trigger type="button" class="catalog-filter-mobile-panel__trigger" (click)="onOpen()">
+  <span i18n="@@catalogFilterMobilePanel.trigger">Filtros</span>
+  @if (activeFilterCount() > 0) {
+    <span class="catalog-filter-mobile-panel__badge">{{ activeFilterCount() }}</span>
+  }
+</button>
+
+@defer (on interaction(trigger)) {
+  @if (isOpen()) {
+    <div class="catalog-filter-mobile-panel__backdrop" aria-hidden="true" (click)="onClose()"></div>
+    <div
+      class="catalog-filter-mobile-panel__panel"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="titleId"
+      appFocusTrap
+      [returnFocusTo]="triggerElement()"
+      (keydown.escape)="onClose()"
+    >
+      <div class="catalog-filter-mobile-panel__header">
+        <h2 [id]="titleId" i18n="@@catalogFilterMobilePanel.title">Filtros</h2>
+        <button type="button" class="catalog-filter-mobile-panel__close" (click)="onClose()">
+          <span class="visually-hidden" i18n="@@catalogFilterMobilePanel.close">Cerrar</span>
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <app-catalog-filter-panel
+        [filters]="filters()"
+        [categories]="categories()"
+        (filtersChange)="onFiltersChange($event)"
+        (clear)="onClear()"
+      />
+    </div>
+  }
+}

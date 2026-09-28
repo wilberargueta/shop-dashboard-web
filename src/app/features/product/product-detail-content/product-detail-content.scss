@@ -1,0 +1,111 @@
+@use '../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.product-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.product-detail-content__placeholder img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+.product-detail-content__info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.product-detail-content__name {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  overflow-wrap: anywhere;
+}
+
+.product-detail-content__sku {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.product-detail-content__availability {
+  margin: 0;
+  font-weight: 600;
+}
+
+.product-detail-content__availability--in-stock {
+  color: var(--color-primary);
+}
+
+.product-detail-content__availability--out-of-stock {
+  color: var(--color-text-muted);
+}
+
+.product-detail-content__description {
+  line-height: var(--line-height-base);
+}
+
+.product-detail-content__usage-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-base);
+}
+
+.product-detail-content__add-button {
+  align-self: flex-start;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 600;
+}
+
+.product-detail-content__add-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-detail-content__whatsapp-button {
+  align-self: flex-start;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.product-detail-content__whatsapp-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (min-width: bp.$lg) {
+  .product-detail-content {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-6);
+  }
+
+  .product-detail-content__carousel,
+  .product-detail-content__placeholder {
+    flex: 1 1 50%;
+    min-width: 0;
+  }
+
+  .product-detail-content__info {
+    flex: 1 1 50%;
+    min-width: 0;
+  }
+}

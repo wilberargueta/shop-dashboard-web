@@ -1,5 +1,5 @@
 /**
- * OpenAPI definition
+ * shop-backend-service
  *
  * 
  *
@@ -11,6 +11,9 @@
 
 export interface RenditionRef { 
     webp?: string;
+    /**
+     * Respaldo para navegadores sin soporte WebP.
+     */
     jpeg?: string;
     width?: number;
     height?: number;

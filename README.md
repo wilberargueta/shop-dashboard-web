@@ -1,59 +1,160 @@
-# ShopDashboardWeb
+# shop-dashboard-web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Sitio público del catálogo (Angular 22, SSR). Compartible por WhatsApp: al
+pegar un enlace `/p/:slug` debe salir la foto y el título del producto.
 
-## Development server
+## Requisitos
 
-To start a local development server, run:
+- Node 24 (`.node-version`) y pnpm (`packageManager` en `package.json`).
+- Docker y Docker Compose, para levantar el backend.
+- El repositorio `shop-backend-service` como carpeta hermana (o en cualquier
+  ruta): este sitio no tiene datos propios, todo viene de su API.
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Desarrollo
 
 ```bash
-ng generate component component-name
+pnpm install
+
+# En otra terminal, desde shop-backend-service:
+#   docker compose up -d
+# GET http://localhost:8080/actuator/health debe responder UP.
+
+pnpm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Abre `http://localhost:4200`. `proxy.conf.json` redirige `/api/**` y
+`/media/**` al backend en `localhost:8080`, así que no hace falta configurar
+`API_BASE_URL` en desarrollo.
+
+## Pruebas
 
 ```bash
-ng generate --help
+pnpm lint
+pnpm test              # unitarias y de componentes (Vitest + Angular Testing Library)
+pnpm e2e                # Playwright — necesita el backend real levantado (arriba)
 ```
 
-## Building
+`pnpm e2e` arranca `pnpm start` automáticamente (ver `playwright.config.ts`)
+y corre contra `http://localhost:4200`. Sin el backend arriba, los casos que
+dependen de catálogo con productos fallan por falta de datos, no por un
+error de este repo.
 
-To build the project run:
+Si el backend tiene el catálogo vacío (recién levantado con
+`docker compose up`), siémbralo una vez con
+`scripts/seed-e2e-catalog.mjs` (crea las categorías "Aceites"/"Cremas" y 5
+productos publicados, incluidos los que los specs de WhatsApp necesitan por
+nombre exacto). Es idempotente: correrlo de nuevo no duplica nada.
 
 ```bash
-ng build
+ADMIN_PASSWORD=<el ADMIN_INITIAL_PASSWORD del .env del backend> pnpm e2e:seed
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Para medir Lighthouse hace falta el build de producción, no el servidor de
+desarrollo:
 
 ```bash
-ng test
+pnpm build
+pnpm serve:ssr:shop-dashboard-web   # sirve dist/ en el puerto 4000
+pnpm lighthouse                     # y/o pnpm lighthouse:product
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Build de producción
 
 ```bash
-ng e2e
+pnpm build
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Genera `dist/shop-dashboard-web/browser` (estático) y `/server` (Node/SSR).
 
-## Additional Resources
+## Variables de entorno
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Las lee `src/server.ts` en tiempo de ejecución (no en build):
+
+| Variable | Por defecto | Qué hace |
+|---|---|---|
+| `PORT` | `4000` | Puerto en el que escucha el servidor Express/SSR. |
+| `API_BASE_URL` | `http://localhost:8080` | Base de la API del backend. **Absoluta siempre**, también en producción — el servidor SSR la usa para renderizar. |
+| `SITE_URL` | `http://localhost:4200` | Origen público del sitio, usado para `og:url`, `og:image`, `canonical` y el sitemap. Debe ser la URL real con la que se comparte el sitio. |
+
+## Despliegue con Docker
+
+`Dockerfile` es multi-etapa: instala dependencias, hace el build de
+producción y copia solo `dist/` + las dependencias de producción (`express`,
+`compression`, `@angular/ssr` y afines) a una imagen final `node:24-slim`
+que corre como el usuario no root `node` (uid 1000, ya incluido en la
+imagen base). Trae `HEALTHCHECK` contra `GET /` usando el `fetch` global de
+Node, sin depender de `curl`/`wget`.
+
+```bash
+docker build -t shop-dashboard-web .
+
+docker run --rm -p 4000:4000 \
+  -e API_BASE_URL=http://localhost:8080 \
+  -e SITE_URL=http://localhost:4000 \
+  shop-dashboard-web
+```
+
+`curl http://localhost:4000/` debe devolver el HTML del catálogo ya
+renderizado en servidor (no una SPA vacía), y `docker inspect --format=
+'{{.State.Health.Status}}' <contenedor>` debe marcar `healthy` a los pocos
+segundos de arrancar.
+
+### Conectar el contenedor con el backend en Docker — y por qué importa
+
+El backend limita peticiones por IP (`docs/ARQUITECTURA.md` §7). El servidor
+SSR de este sitio llama al backend **en cada render**, siempre desde la
+misma IP del contenedor — sin excluirla, el sitio se autobloquea con `429`
+en cuanto tenga algo de tráfico real. Por eso la IP (o el rango) del
+contenedor de este sitio tiene que estar en `INTERNAL_CLIENTS` del `.env`
+del backend.
+
+Pasos, asumiendo que el backend ya corre con su propio `docker compose up`
+(carpeta `shop-backend-service`, red creada automáticamente con el nombre
+`shop-backend-service_default`):
+
+```bash
+# 1. Unir el contenedor de este sitio a la red del backend, y usar el
+#    nombre del servicio (no localhost) para llegar a él.
+docker run -d --name shop-dashboard-web \
+  --network shop-backend-service_default \
+  -p 4000:4000 \
+  -e API_BASE_URL=http://backend:8080 \
+  -e SITE_URL=http://localhost:4000 \
+  shop-dashboard-web
+
+# 2. Obtener la IP real que el demonio de Docker le asignó al contenedor.
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' shop-dashboard-web
+
+# 3. Mejor que la IP suelta: el CIDR de la red completa, porque esa IP
+#    cambia en cada arranque del contenedor y `INTERNAL_CLIENTS` sí acepta
+#    rangos.
+docker network inspect shop-backend-service_default \
+  --format '{{(index .IPAM.Config 0).Subnet}}'
+```
+
+Añade el valor obtenido a `INTERNAL_CLIENTS` en el `.env` del backend
+(acepta IPs sueltas y rangos CIDR mezclados, separados por coma) y reinicia
+el backend:
+
+```bash
+# en shop-backend-service/.env
+INTERNAL_CLIENTS=172.20.0.0/16
+```
+
+```bash
+docker compose restart backend
+```
+
+Sin este paso, todas las peticiones del renderizado en servidor —que
+comparten la misma IP del contenedor— cuentan contra el mismo límite que
+cualquier visitante normal, y el sitio deja de poder renderizar en cuanto
+se agota.
+
+## Otros comandos
+
+```bash
+pnpm api:generate       # regenera src/app/api/ desde el OpenAPI del backend
+pnpm extract-i18n       # extrae textos a messages.xlf
+```
+
+`src/app/api/` es generado — no se edita a mano (ver `CLAUDE.md`).

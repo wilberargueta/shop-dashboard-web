@@ -49,6 +49,10 @@ __screenshots__/
 /test-results
 /blob-report
 
+# Lighthouse
+/lighthouse-report.html
+/lighthouse-report-product.html
+
 # System files
 .DS_Store
 Thumbs.db

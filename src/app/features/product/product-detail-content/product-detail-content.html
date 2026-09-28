@@ -1,0 +1,101 @@
+<article class="product-detail-content">
+  @if (images().length > 0) {
+    <app-product-image-carousel class="product-detail-content__carousel" [images]="images()" />
+  } @else {
+    <picture class="product-detail-content__placeholder">
+      <img src="/images/product-placeholder.svg" alt="" width="600" height="600" style="aspect-ratio: 1 / 1" />
+    </picture>
+  }
+
+  <div class="product-detail-content__info">
+    <h1 class="product-detail-content__name" [attr.id]="titleId()">{{ product().name }}</h1>
+
+    <p class="product-detail-content__sku">
+      <span i18n="@@productDetailContent.skuLabel">SKU</span>: {{ product().sku }}
+    </p>
+
+    <app-product-price
+      [price]="product().price"
+      [effectivePrice]="product().effectivePrice"
+      [currency]="product().currency"
+      [onSale]="product().onSale ?? false"
+      [discountPercentage]="product().discountPercentage"
+    />
+
+    @if (product().inStock) {
+      <p
+        class="product-detail-content__availability product-detail-content__availability--in-stock"
+        i18n="@@productDetailContent.inStock"
+      >
+        Disponible
+      </p>
+    } @else {
+      <p
+        class="product-detail-content__availability product-detail-content__availability--out-of-stock"
+        i18n="@@productDetailContent.outOfStock"
+      >
+        Agotado
+      </p>
+    }
+
+    <app-quantity-stepper
+      [quantity]="addQuantity()"
+      (quantityChange)="addQuantity.set($event)"
+      [min]="1"
+      [disabled]="product().inStock === false || selected()"
+    />
+
+    <button
+      type="button"
+      class="product-detail-content__add-button"
+      [attr.aria-disabled]="addDisabled() ? 'true' : null"
+      [attr.aria-describedby]="addDisabled() ? addReasonId() : null"
+      (click)="onAddClick()"
+    >
+      @if (selected()) {
+        <span i18n="@@productDetailContent.removeFromSelection">Quitar de la selección</span>
+      } @else {
+        <span i18n="@@productDetailContent.addToSelection">Añadir a la selección</span>
+      }
+    </button>
+    @if (addDisabled()) {
+      @if (product().inStock === false) {
+        <span [id]="addReasonId()" class="visually-hidden" i18n="@@productDetailContent.addDisabledReasonOutOfStock"
+          >Agotado. No disponible para pedido por ahora.</span
+        >
+      } @else {
+        <span [id]="addReasonId()" class="visually-hidden" i18n="@@productDetailContent.addDisabledReasonCapReached"
+          >Límite de selección alcanzado.</span
+        >
+      }
+    }
+
+    <button
+      type="button"
+      class="product-detail-content__whatsapp-button"
+      [attr.aria-disabled]="whatsappDisabled() ? 'true' : null"
+      [attr.aria-describedby]="whatsappDisabled() ? whatsappReasonId() : null"
+      (click)="onWhatsappClick()"
+    >
+      <span i18n="@@productDetailContent.whatsappButton">Consultar por WhatsApp</span>
+    </button>
+    @if (whatsappDisabled()) {
+      <span [id]="whatsappReasonId()" class="visually-hidden" i18n="@@productDetailContent.whatsappDisabledReason"
+        >Agotado. No disponible para pedido por ahora.</span
+      >
+    }
+
+    @if (product().description) {
+      <div class="product-detail-content__description" [innerHTML]="product().description"></div>
+    }
+
+    @if (product().usageInstructions) {
+      <section class="product-detail-content__usage">
+        <h2 class="product-detail-content__usage-title" i18n="@@productDetailContent.usageTitle">
+          Instrucciones de uso
+        </h2>
+        <div [innerHTML]="product().usageInstructions"></div>
+      </section>
+    }
+  </div>
+</article>

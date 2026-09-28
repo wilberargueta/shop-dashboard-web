@@ -4,8 +4,13 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import compression from 'compression';
 import express from 'express';
 import { join } from 'node:path';
+import { buildRobotsTxt } from './server/seo/robots-txt.builder';
+import { buildSitemapXml } from './server/seo/sitemap-xml.builder';
+import { getCachedSitemapXml } from './server/seo/sitemap-cache';
+import { fetchPublishedProductSlugs } from './server/seo/sitemap-slugs';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -13,16 +18,43 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * Sin esto, el servidor sirve el JS/CSS/HTML tal cual, sin `Content-Encoding`
+ * (verificado con `curl -H "Accept-Encoding: gzip"`, sin cabecera de vuelta).
+ * `PROJECT_SPEC.md §10` mide el JS inicial "comprimido" — el 113 KB que
+ * reporta `pnpm build` es solo la estimación de la CLI, no algo que el
+ * servidor real aplicara. Bug real encontrado al correr Lighthouse contra
+ * este servidor con el backend real levantado (W14): sin compresión, LCP
+ * caía a ~3.6s bajo la simulación de 4G (Rendimiento 83, por debajo del 90
+ * objetivo) porque el navegador descargaba los ~400 KB sin comprimir de los
+ * bundles iniciales, no los ~114 KB documentados.
  */
+app.use(compression());
+
+// Mismas variables que ya lee app.config.server.ts — sin nombres nuevos.
+const siteUrl = process.env['SITE_URL'] ?? 'http://localhost:4200';
+const apiBaseUrl = process.env['API_BASE_URL'] ?? 'http://localhost:8080';
+
+/**
+ * `/robots.txt` y `/sitemap.xml` (W11): rutas técnicas, nunca pasan por
+ * `AngularNodeAppEngine` — no son componentes ni tienen `RenderMode` en
+ * `app.routes.server.ts`. `/sitemap.xml` se cachea 1 hora en memoria
+ * (PROJECT_SPEC.md §9).
+ */
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(buildRobotsTxt(siteUrl));
+});
+
+app.get('/sitemap.xml', async (_req, res, next) => {
+  try {
+    const xml = await getCachedSitemapXml(async () => {
+      const slugs = await fetchPublishedProductSlugs(apiBaseUrl);
+      return buildSitemapXml(siteUrl, slugs);
+    });
+    res.type('application/xml').send(xml);
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * Serve static files from /browser

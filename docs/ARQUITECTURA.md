@@ -32,19 +32,19 @@ cliente ni almacenamiento de datos del visitante salvo que se pida explícitamen
 | `shop-backoffice-web` | Panel de administración. SPA pura, sin SSR. | Angular 22 | `4300` |
 
 ```
-                     ┌────────────────────────┐
-   visitante  ─────► │  shop-dashboard-web (SSR)│ ──┐
-   (sin login)       └────────────────────────┘   │  API pública
-                                                   │  sin auth, rate-limited
-                     ┌────────────────────────┐   │  solo lectura
-   administrador ──► │  shop-backoffice-web    │ ──┤
-   (con login)       └────────────────────────┘   │  API admin
-                                                   │  JWT + permisos
-                                                   ▼
-                                      ┌────────────────────────┐
-                                      │   shop-backend-service │
-                                      │   Spring Boot monolito │
-                                      └───────────┬────────────┘
+                     ┌─────────────────────────────┐
+   visitante  ─────► │  shop-dashboard-web (SSR)   │ ──┐
+   (sin login)       └─────────────────────────────┘   │  API pública
+                                                        │  sin auth, rate-limited
+                     ┌─────────────────────────────┐   │  solo lectura
+   administrador ──► │  shop-backoffice-web        │ ──┤
+   (con login)       └─────────────────────────────┘   │  API admin
+                                                        │  JWT + permisos
+                                                        ▼
+                                      ┌─────────────────────────────┐
+                                      │   shop-backend-service      │
+                                      │   Spring Boot monolito      │
+                                      └───────────┬─────────────────┘
                                                   │
                                     ┌─────────────┴─────────────┐
                                     ▼                           ▼
@@ -142,7 +142,7 @@ ofrecer reasignar los productos a otra categoría antes de borrar.
 | `id` | UUID PK | |
 | `sku` | varchar(64) | único, obligatorio, se muestra en el mensaje de WhatsApp |
 | `name` | varchar(200) | obligatorio |
-| `slug` | varchar(220) | único, obligatorio, generado del nombre; base de la URL pública |
+| `slug` | varchar(220) | único, obligatorio, generado del nombre **al crear**; **inmutable después**: es la URL pública que se comparte por WhatsApp y tiene que seguir funcionando. Hacerlo editable exigiría además una redirección 301 desde el antiguo (ver `shop-dashboard-web` §9, mejora futura). |
 | `short_description` | varchar(300) | opcional; se muestra en la tarjeta del grid |
 | `description` | text | opcional; HTML saneado, se muestra en el modal de detalle |
 | `usage_instructions` | text | opcional; HTML saneado; si es null el modal no muestra la pestaña |
@@ -216,8 +216,17 @@ El frontend solo pinta lo que recibe.
 | Nombre | Ancho máx. | Uso |
 |---|---|---|
 | `thumb` | 200 px | miniaturas en el backoffice |
-| `card` | 600 px | tarjeta del grid en la web pública |
+| `card` | 600 px | tarjeta del grid en escritorio (3 columnas ≈ 400 px CSS) |
+| `card2x` | 1200 px | la misma tarjeta en pantallas de alta densidad y en móvil a 1 columna |
 | `detail` | 1400 px | carrusel del modal de detalle |
+
+**Por qué existe `card2x`:** en un móvil de 390 px CSS con una columna y
+densidad 3x, la tarjeta necesita ~1170 px reales. Con solo `card` (600 px) la
+imagen se ve borrosa; sin él, el navegador salta a `detail` (1400 px) y descarga
+bastante más de lo necesario, justo en la conexión más lenta y penalizando el
+LCP móvil, que es la métrica que más importa aquí. Un escalón intermedio lo
+resuelve. El frontend declara ambos en el mismo `srcset` con sus descriptores
+`w` y deja que el navegador elija.
 
 Cada versión se genera en **WebP** (principal) y **JPEG** (respaldo). La relación
 de aspecto original se conserva; no se recorta. El frontend usa `<picture>` con
@@ -351,6 +360,7 @@ Parámetros:
 | `minPrice` / `maxPrice` | decimal | — | se aplican sobre el **precio efectivo** |
 | `onSale` | bool | — | solo productos con descuento vigente |
 | `inStock` | bool | — | |
+| `ids` | UUID, repetible (máx. 50) | — | Devuelve solo esos productos e **ignora los demás filtros**. Aplica las mismas reglas de visibilidad: un producto no publicado simplemente no aparece, sin error. El orden de la respuesta no sigue al de los `ids`. Lo usa `shop-dashboard-web` para restaurar la selección del visitante en una sola petición. |
 
 Respuesta:
 
@@ -383,8 +393,9 @@ Respuesta:
   "category": { "slug": "aceites", "name": "Aceites" },
   "primaryImage": {
     "altText": "Frasco de aceite de lavanda",
-    "card": { "webp": "/media/.../card.webp", "jpeg": "/media/.../card.jpg", "width": 600, "height": 600 },
-    "thumb": { "...": "..." }
+    "thumb":  { "webp": "/media/.../thumb.webp",  "jpeg": "/media/.../thumb.jpg",  "width": 200,  "height": 200 },
+    "card":   { "webp": "/media/.../card.webp",   "jpeg": "/media/.../card.jpg",   "width": 600,  "height": 600 },
+    "card2x": { "webp": "/media/.../card2x.webp", "jpeg": "/media/.../card2x.jpg", "width": 1200, "height": 1200 }
   }
 }
 ```
@@ -620,7 +631,7 @@ y el cliente recibirá otra.
 
 Cómo se garantiza: el backend genera un archivo de casos de referencia,
 `whatsapp-golden.json`, con pares de entrada y salida esperada producidos por su
-propia implementación, y lo publica como artefacto de su build. `tienda-web`
+propia implementación, y lo publica como artefacto de su build. `shop-dashboard-web`
 commitea ese archivo y tiene un test que lo recorre caso por caso. Si alguien
 cambia una de las dos implementaciones, ese test se pone rojo.
 
@@ -700,6 +711,16 @@ darle un cubo aparte mucho más amplio (`app.security.internal-clients`). Si no,
 el sitio público se auto-bloquea en cuanto haya algo de tráfico. También debe
 tener un test.
 
+**Ambas listas aceptan IP sueltas y rangos CIDR**, mezclados:
+`127.0.0.1, 10.0.0.5, 172.16.0.0/12`. El rango no es un lujo: en Docker las IP
+de los contenedores las reparte el demonio y cambian en cada arranque, así que
+una IP fija en la configuración se queda obsoleta sola. Un valor vacío significa
+lista vacía —no "todos"—, que es el valor correcto en local, donde no hay proxy
+inverso delante. Una entrada mal formada debe **impedir el arranque** con un
+mensaje que diga cuál es, no ignorarse en silencio: ignorarla convierte
+`trusted-proxies` en "no confío en nadie" y el límite pasa a contar a todos los
+visitantes en el mismo cubo.
+
 ### Subida de imágenes — el punto más delicado
 
 Este es el único lugar donde un extraño... bueno, no: donde un usuario
@@ -746,7 +767,7 @@ services:
     environment:
       APP_MEDIA_BASE_PATH: /data/media
     volumes:
-      - /srv/tienda/media:/data/media
+      - /srv/shop/media:/data/media
 ```
 
 La propiedad es `app.media.base-path`, leída de `APP_MEDIA_BASE_PATH`.
@@ -773,6 +794,46 @@ descubrirlo cuando alguien sube la primera foto.
 - **Commits**: Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`, `docs:`).
 - **Ramas**: `main` protegida. Trabajo en `feat/…`, `fix/…`.
 - **Un cambio, un commit.** Nada de commits que tocan tres cosas no relacionadas.
+
+### Puntos de corte (breakpoints) — los mismos en los dos frontends
+
+Definidos una sola vez, como variables CSS, y usados por igual en `shop-dashboard-web` y
+en `shop-backoffice-web`. Que los dos proyectos usen la misma escala evita que
+acabes con dos sistemas distintos que nadie recuerda.
+
+| Nombre | Desde | Dispositivo típico |
+|---|---|---|
+| `xs` | 0 px | móvil pequeño (iPhone SE, 320–374 px) |
+| `sm` | 480 px | móvil grande |
+| `md` | 768 px | tableta vertical |
+| `lg` | 1024 px | tableta horizontal / portátil pequeño |
+| `xl` | 1280 px | escritorio |
+| `2xl` | 1536 px | pantalla grande |
+
+Reglas comunes a ambos frontends:
+
+1. **Móvil primero.** Los estilos base son los del móvil; los `@media` solo
+   añaden a partir de `min-width`. Nada de `max-width` como regla general: lleva
+   a cascadas que se pisan entre sí.
+2. **Nunca se maqueta por dispositivo, se maqueta por espacio disponible.**
+   Usa `clamp()`, `minmax()` y unidades relativas antes que un `@media` nuevo.
+   Cuando un componente deba adaptarse a su contenedor y no a la ventana
+   (una tarjeta que vive tanto en una columna estrecha como en una ancha),
+   usa consultas de contenedor (`@container`).
+3. **Áreas táctiles de 44×44 px como mínimo**, con al menos 8 px de separación
+   entre controles adyacentes. Un icono de 16 px con área táctil de 16 px es
+   inusable con el pulgar, y esto se olvida siempre en las tablas.
+4. **Ancho mínimo soportado: 320 px.** Por debajo de eso no se garantiza nada.
+   A 320 px **no puede haber scroll horizontal** en ninguna pantalla.
+5. **Nada de tamaños de fuente fijos en px para el texto de lectura.** `rem`,
+   respetando el tamaño base que el usuario tenga configurado en su navegador.
+   Debe seguir siendo usable con el zoom del navegador al 200 %.
+6. **Zonas seguras** (`env(safe-area-inset-*)`) en los elementos fijos a los
+   bordes, o la barra inferior queda debajo del indicador de inicio del iPhone.
+7. **Orientación horizontal en móvil**: la altura útil baja a ~360 px. Los
+   diálogos y paneles deben poder desplazarse; nada con `height: 100vh` fijo.
+8. **`100vh` no es la altura visible en móvil.** La barra de direcciones del
+   navegador la cambia al desplazarse. Usa `100dvh` donde importe.
 
 ---
 

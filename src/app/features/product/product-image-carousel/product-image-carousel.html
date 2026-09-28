@@ -1,0 +1,119 @@
+<div
+  class="product-image-carousel"
+  role="group"
+  aria-roledescription="carrusel"
+  i18n-aria-roledescription="@@productImageCarousel.roleDescription"
+  aria-label="Imágenes del producto"
+  i18n-aria-label="@@productImageCarousel.label"
+  (keydown)="onKeydown($event)"
+>
+  <div class="product-image-carousel__viewport">
+    <div class="product-image-carousel__track" #track>
+      @for (image of images(); track image.altText + '-' + $index; let i = $index) {
+        <div
+          class="product-image-carousel__slide"
+          role="group"
+          aria-roledescription="imagen"
+          i18n-aria-roledescription="@@productImageCarousel.slideRoleDescription"
+          [attr.aria-labelledby]="instanceId + '-slide-label-' + i"
+        >
+          <span [id]="instanceId + '-slide-label-' + i" class="visually-hidden" i18n="@@productImageCarousel.slideLabel">
+            Imagen {{ i + 1 }} de {{ total() }}
+          </span>
+          <picture>
+            @if (image.detail?.webp) {
+              <source type="image/webp" [srcset]="image.detail.webp" />
+            }
+            <img
+              [src]="image.detail?.jpeg ?? image.detail?.webp"
+              [alt]="image.altText ?? ''"
+              [attr.width]="image.detail?.width ?? 1400"
+              [attr.height]="image.detail?.height ?? 1400"
+              [style.aspect-ratio]="
+                image.detail?.width && image.detail.height ? image.detail.width + ' / ' + image.detail.height : '1 / 1'
+              "
+              [attr.loading]="i === 0 ? 'eager' : 'lazy'"
+              [attr.fetchpriority]="i === 0 ? 'high' : null"
+              decoding="async"
+            />
+          </picture>
+        </div>
+      }
+    </div>
+
+    @if (total() > 1) {
+      <button
+        type="button"
+        class="product-image-carousel__arrow product-image-carousel__arrow--prev"
+        [attr.aria-disabled]="isFirst() ? 'true' : null"
+        [attr.aria-describedby]="isFirst() ? instanceId + '-first-reason' : null"
+        (click)="onPrevious()"
+      >
+        <span class="visually-hidden" i18n="@@productImageCarousel.previous">Imagen anterior</span>
+        <span aria-hidden="true">&lsaquo;</span>
+      </button>
+      <button
+        type="button"
+        class="product-image-carousel__arrow product-image-carousel__arrow--next"
+        [attr.aria-disabled]="isLast() ? 'true' : null"
+        [attr.aria-describedby]="isLast() ? instanceId + '-last-reason' : null"
+        (click)="onNext()"
+      >
+        <span class="visually-hidden" i18n="@@productImageCarousel.next">Siguiente imagen</span>
+        <span aria-hidden="true">&rsaquo;</span>
+      </button>
+
+      <span [id]="instanceId + '-first-reason'" class="visually-hidden" i18n="@@productImageCarousel.firstReason"
+        >Ya es la primera imagen.</span
+      >
+      <span [id]="instanceId + '-last-reason'" class="visually-hidden" i18n="@@productImageCarousel.lastReason"
+        >Ya es la última imagen.</span
+      >
+    }
+  </div>
+
+  @if (total() > 1) {
+    <div class="product-image-carousel__dots">
+      @for (image of images(); track image.altText + '-' + $index; let i = $index) {
+        <button
+          type="button"
+          class="product-image-carousel__dot"
+          [attr.aria-current]="i === currentIndex() ? 'true' : null"
+          (click)="goTo(i)"
+        >
+          <span class="visually-hidden" i18n="@@productImageCarousel.goToImage">Ir a la imagen {{ i + 1 }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="product-image-carousel__thumbnails">
+      @for (image of images(); track image.altText + '-' + $index; let i = $index) {
+        <button
+          type="button"
+          class="product-image-carousel__thumbnail"
+          [class.product-image-carousel__thumbnail--active]="i === currentIndex()"
+          (click)="goTo(i)"
+        >
+          <span class="visually-hidden" i18n="@@productImageCarousel.goToImage">Ir a la imagen {{ i + 1 }}</span>
+          <picture>
+            @if (image.detail?.webp) {
+              <source type="image/webp" [srcset]="image.detail.webp" />
+            }
+            <img
+              [src]="image.detail?.jpeg ?? image.detail?.webp"
+              alt=""
+              [attr.width]="image.detail?.width ?? 1400"
+              [attr.height]="image.detail?.height ?? 1400"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
+        </button>
+      }
+    </div>
+  }
+
+  <p class="visually-hidden" aria-live="polite" i18n="@@productImageCarousel.liveAnnouncement">
+    Imagen {{ currentIndex() + 1 }} de {{ total() }}
+  </p>
+</div>
