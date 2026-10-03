@@ -23,9 +23,16 @@
   margin-bottom: var(--space-5);
 }
 
+/* Título manuscrito con subrayado de puntos: eco del logo y del encabezado. */
 .catalog-page__title {
   margin: 0;
-  font-size: var(--font-size-lg);
+  padding-bottom: var(--space-1);
+  border-bottom: 3px dotted var(--color-accent);
+  color: var(--color-primary);
+  font-family: var(--font-family-brand);
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.2;
 }
 
 .catalog-page__filters-desktop {
@@ -51,7 +58,7 @@
   min-width: 44px;
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-text);
   font-weight: 600;
@@ -62,7 +69,9 @@
  * selección fija no tape el último producto del grid (caso 54).
  */
 .catalog-page__content--bar-visible {
-  padding-bottom: calc(var(--selection-bar-height) + env(safe-area-inset-bottom));
+  padding-bottom: calc(
+    var(--selection-bar-height) + var(--selection-bar-offset) + env(safe-area-inset-bottom)
+  );
 }
 
 @media (min-width: bp.$lg) {
@@ -81,6 +90,10 @@
 
   .catalog-page__filters-desktop {
     flex: 0 0 16rem;
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
   }
 
   .catalog-page__content {

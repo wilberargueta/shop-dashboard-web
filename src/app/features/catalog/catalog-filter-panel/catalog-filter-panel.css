@@ -32,9 +32,9 @@
 .catalog-filter-panel__label input,
 .catalog-filter-panel__label select {
   min-height: 44px;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-base);
   background: var(--color-surface);
   color: var(--color-text);
@@ -51,9 +51,21 @@
   min-height: 44px;
 }
 
+/* Casilla redonda; el aro usa el rosa profundo (no el del logo) para que siga siendo visible sobre blanco. */
 .catalog-filter-panel__checkbox input {
-  width: 20px;
-  height: 20px;
+  appearance: none;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-surface) center / 70% no-repeat;
+}
+
+.catalog-filter-panel__checkbox input:checked {
+  background-color: var(--color-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
 }
 
 .catalog-filter-panel__price-inputs {
@@ -79,9 +91,9 @@
   gap: var(--space-1);
   min-height: 44px;
   min-width: 44px;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--font-size-sm);

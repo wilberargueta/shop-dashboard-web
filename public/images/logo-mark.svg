@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Emblema de Gaby's Beauty Salón redibujado: arcos, puntos y ondas en el rosa del logo, plancha en rosa claro. Pensado para ir sobre fondo oscuro (el medallón negro del encabezado). Decorativo: el nombre va al lado, como texto. -->
+  <g stroke="#f4a6a6">
+    <path d="M23.4 61 A86 86 0 0 1 176.6 61" stroke-width="7" stroke-linecap="butt"/>
+    <path d="M15.3 115 A86 86 0 0 0 184.7 115" stroke-width="7" stroke-linecap="butt"/>
+    <path d="M37.6 64 A72 72 0 0 1 162.4 64" stroke-width="4.4" stroke-dasharray="0.01 8.6"/>
+    <path d="M29.6 115 A72 72 0 0 0 170.4 115" stroke-width="4.4" stroke-dasharray="0.01 8.6"/>
+    <path d="M9 73 C22 66 32 78 46 84 C57 88 67 84 70 66" stroke-width="4"/>
+    <path d="M191 67 C183 77 175 81 165 79 C155 77 149 68 140 62 C134 58 128 60 124 64" stroke-width="4"/>
+  </g>
+  <!-- Plancha y mano, dibujadas en horizontal y giradas -->
+  <g transform="rotate(-48 104 90)">
+    <rect x="68" y="81" width="72" height="7" rx="3.5" fill="#f4a6a6"/>
+    <rect x="68" y="89" width="72" height="7" rx="3.5" fill="#e88b99"/>
+    <circle cx="139" cy="88.5" r="5.2" fill="#151012" stroke="#f4a6a6" stroke-width="2.2"/>
+    <!-- Muñeca y palma -->
+    <path d="M99 52 C99 46 103 43 108 43 C113 43 117 46 117 52 L118 70 C124 70 125 78 120 80 L96 80 C92 78 93 70 99 70 Z" fill="#fde3e1" stroke="#e29aa3" stroke-width="1.8"/>
+    <!-- Dedos rodeando la plancha -->
+    <g fill="#fde3e1" stroke="#e29aa3" stroke-width="1.8">
+      <rect x="96" y="76" width="6" height="26" rx="3"/>
+      <rect x="103" y="76" width="6" height="28" rx="3"/>
+      <rect x="110" y="76" width="6" height="27" rx="3"/>
+      <rect x="117" y="76" width="6" height="23" rx="3"/>
+    </g>
+  </g>
+</svg>

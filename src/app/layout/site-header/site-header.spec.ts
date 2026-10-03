@@ -18,5 +18,7 @@ describe('SiteHeader', () => {
     expect(screen.getByRole('banner')).toBeTruthy();
     const brand = screen.getByRole('link', { name: "Gabys Beauty's Store" });
     expect(brand.getAttribute('href')).toBe('/');
+    // Emblema decorativo: el nombre ya va como texto, no debe anunciarse dos veces.
+    expect(brand.querySelector('img')?.getAttribute('alt')).toBe('');
   });
 });

@@ -63,7 +63,7 @@
   min-width: 44px;
   padding: 0 var(--space-4);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
   font-weight: 600;
@@ -79,10 +79,10 @@
   min-height: 44px;
   min-width: 44px;
   padding: 0 var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
-  color: var(--color-text);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
