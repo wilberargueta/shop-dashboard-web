@@ -9,12 +9,12 @@ export interface WhatsAppSettings {
 }
 
 /**
- * `whatsapp.phone_number`/`whatsapp.template_*`/`store.name`
- * (ARQUITECTURA.md §4.6): `PublicSettings` todavía no existe en el cliente
- * generado aquí — `B11` del backend ya está hecho, pero este repo no ha
- * vuelto a correr `pnpm api:generate` desde entonces. Valor fijo por ahora,
- * igual en servidor y navegador, mismo patrón que `MAX_SELECTION`/`SITE_URL`.
- * Las plantillas por defecto son las de la migración inicial del backend
+ * `store.name` viene del backoffice ("Datos de mi tienda"), cargado al
+ * arrancar por `StoreName` (`GET /api/public/v1/settings`). El número de
+ * WhatsApp y las plantillas (`whatsapp.phone_number`/`whatsapp.template_*`,
+ * ARQUITECTURA.md §4.6) siguen siendo un valor fijo, igual en servidor y
+ * navegador, mismo patrón que `MAX_SELECTION`/`SITE_URL`: el endpoint ya los
+ * expone, pero todavía no se leen de ahí. Las plantillas por defecto son las de la migración inicial del backend
  * (ARQUITECTURA.md §6 "Valores por defecto"); el número es un valor de
  * ejemplo, no uno real — el backend siembra `whatsapp.phone_number = ''`
  * hasta que el administrador lo configura.

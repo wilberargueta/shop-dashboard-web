@@ -1,4 +1,10 @@
-import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  LOCALE_ID,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
@@ -8,6 +14,7 @@ import localeEsSv from '@angular/common/locales/es-SV';
 import { API_BASE_URL } from './core/config/api-base-url.token';
 import { MAX_SELECTION } from './core/config/max-selection.token';
 import { SITE_URL } from './core/config/site-url.token';
+import { StoreName } from './core/config/store-name.service';
 import { WHATSAPP_SETTINGS, WhatsAppSettings } from './core/config/whatsapp-settings.token';
 import { Configuration } from './api/configuration';
 import { ApiConfiguration } from './core/http/api-configuration';
@@ -34,12 +41,12 @@ const siteUrl = 'http://localhost:4200';
 // desviación de W1/W8). Valor fijo por ahora, igual en servidor y navegador.
 const maxSelection = 20;
 
-// `whatsapp.phone_number`/`whatsapp.template_*`/`store.name` (ARQUITECTURA.md
-// §4.6): ver whatsapp-settings.token.ts. Plantillas por defecto de
-// ARQUITECTURA.md §6 "Valores por defecto que van en la migración inicial".
-const whatsappSettings: WhatsAppSettings = {
+// `whatsapp.phone_number`/`whatsapp.template_*` (ARQUITECTURA.md §4.6): ver
+// whatsapp-settings.token.ts. Plantillas por defecto de ARQUITECTURA.md §6
+// "Valores por defecto que van en la migración inicial". El nombre de la
+// tienda (`store.name`) sí viene del backoffice: ver `StoreName`.
+const whatsappSettings: Omit<WhatsAppSettings, 'storeName'> = {
   phoneNumber: '50370000000',
-  storeName: "Gabys Beauty's Store",
   templates: {
     single: `¡Hola! Me interesa este producto de {{tienda}}:
 
@@ -68,7 +75,11 @@ export const appConfig: ApplicationConfig = {
     { provide: API_BASE_URL, useValue: apiBaseUrl },
     { provide: SITE_URL, useValue: siteUrl },
     { provide: MAX_SELECTION, useValue: maxSelection },
-    { provide: WHATSAPP_SETTINGS, useValue: whatsappSettings },
+    provideAppInitializer(() => inject(StoreName).load()),
+    {
+      provide: WHATSAPP_SETTINGS,
+      useFactory: (): WhatsAppSettings => ({ ...whatsappSettings, storeName: inject(StoreName).value() }),
+    },
     { provide: Configuration, useValue: new ApiConfiguration({ basePath: apiBaseUrl }) },
   ],
 };
