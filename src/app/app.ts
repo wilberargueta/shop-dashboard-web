@@ -4,13 +4,14 @@ import { SITE_URL } from './core/config/site-url.token';
 import { WHATSAPP_SETTINGS } from './core/config/whatsapp-settings.token';
 import { buildOrganizationJsonLd } from './core/seo/seo.schema';
 import { SeoService } from './core/seo/seo.service';
+import { SiteHeader } from './layout/site-header/site-header';
 import { SelectionRoot } from './features/selection/selection-root/selection-root';
 import { SelectionService } from './features/selection/selection.service';
 import { WhatsAppPreviewDialog } from './features/selection/whatsapp-preview/whatsapp-preview-dialog/whatsapp-preview-dialog';
 import { WhatsAppPreviewService } from './features/selection/whatsapp-preview/whatsapp-preview.service';
 
 @Component({
-  imports: [RouterOutlet, SelectionRoot, WhatsAppPreviewDialog],
+  imports: [RouterOutlet, SiteHeader, SelectionRoot, WhatsAppPreviewDialog],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',

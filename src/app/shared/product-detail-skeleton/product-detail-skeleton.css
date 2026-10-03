@@ -41,7 +41,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .product-detail-skeleton__image,
   .product-detail-skeleton__line {
-    background: linear-gradient(90deg, var(--color-border) 25%, #eeeeec 50%, var(--color-border) 75%);
+    background: linear-gradient(90deg, var(--color-border) 25%, var(--color-skeleton-highlight) 50%, var(--color-border) 75%);
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.4s ease-in-out infinite;
   }

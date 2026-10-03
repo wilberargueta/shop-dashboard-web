@@ -39,7 +39,7 @@ const maxSelection = 20;
 // ARQUITECTURA.md §6 "Valores por defecto que van en la migración inicial".
 const whatsappSettings: WhatsAppSettings = {
   phoneNumber: '50370000000',
-  storeName: 'Mi Tienda',
+  storeName: "Gabys Beauty's Store",
   templates: {
     single: `¡Hola! Me interesa este producto de {{tienda}}:
 
