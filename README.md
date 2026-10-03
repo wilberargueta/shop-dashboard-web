@@ -49,6 +49,14 @@ nombre exacto). Es idempotente: correrlo de nuevo no duplica nada.
 ADMIN_PASSWORD=<el ADMIN_INITIAL_PASSWORD del .env del backend> pnpm e2e:seed
 ```
 
+Para ver el sitio con un catálogo más realista (categorías "Cabello" y "Uñas",
+6 productos con foto de relleno y dos con descuento) hay un segundo script,
+también idempotente y que no toca las categorías de los e2e:
+
+```bash
+ADMIN_PASSWORD=<el ADMIN_INITIAL_PASSWORD del .env del backend> pnpm seed:demo
+```
+
 Para medir Lighthouse hace falta el build de producción, no el servidor de
 desarrollo:
 
